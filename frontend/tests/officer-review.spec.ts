@@ -43,6 +43,9 @@ describe('officer application review', () => {
           classification: { outcome: 'TYPE_1', property_type: { code: 'TYPE_1', name: 'Type 1' }, answers: { rooms: 10, guests: 20, has_restaurant: false } },
           all_required_documents_approved: false,
           allowed_actions: ['REQUEST_REVISION', 'REJECT'],
+          history: [
+            { id: 1, from_status: 'SUBMITTED', to_status: 'UNDER_REVIEW', occurred_at: '2026-09-18T05:00:00Z', reason: 'Review started' },
+          ],
           documents: [
             {
               id: 22,
@@ -86,6 +89,8 @@ describe('officer application review', () => {
     expect(text).toContain('Current')
     expect(text).toContain('Previous · Version 1')
     expect(text).toContain('Demo applicant · Applicant')
+    expect(text).toContain('Application decision history')
+    expect(text).toContain('Reason: Review started')
     expect(wrapper.findAll('button').some((button) => button.text().includes('Return application for correction'))).toBe(true)
     expect(wrapper.findAll('button').some((button) => button.text().includes('Reject application'))).toBe(true)
     expect(text).not.toContain('Approve and issue licence')

@@ -135,6 +135,8 @@ Show relevant chronological status/document history in plain language so the off
 
 UI success text must say what changed, for example “ขอให้ผู้ยื่นแก้ไขเอกสาร 1 รายการแล้ว,” rather than merely “Success.”
 
+The summary includes the server-provided application status history and human-readable reasons before the document list. If a document review or application decision loses a concurrency race, the page reloads the latest allowed actions and versions while preserving any typed reason or note for the officer to reconsider; it never silently retries a stale decision.
+
 ## Permission and integrity failures
 
 - `403`/`404` for a detail uses a neutral localized message and a link back to the permitted queue; never reveal the other authority or applicant.

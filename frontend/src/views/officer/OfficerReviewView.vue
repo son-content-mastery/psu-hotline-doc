@@ -131,10 +131,12 @@ async function reviewDocument(document: OfficerDocument): Promise<void> {
     })
     await load(true)
   } catch (caught) {
-    form.errorKey =
-      caught instanceof ApiError && caught.code === 'DOCUMENT_VERSION_NOT_CURRENT'
-        ? 'officer.staleVersion'
-        : 'officer.reviewError'
+    if (caught instanceof ApiError && ['DOCUMENT_VERSION_NOT_CURRENT', 'DOCUMENT_ALREADY_REVIEWED'].includes(caught.code)) {
+      form.errorKey = 'officer.staleVersion'
+      await load(true)
+    } else {
+      form.errorKey = 'officer.reviewError'
+    }
   } finally {
     form.submitting = false
   }
@@ -190,8 +192,13 @@ async function submitDecision(): Promise<void> {
     decision.value = null
     decisionReason.value = ''
     await load(true)
-  } catch {
-    decisionErrorKey.value = 'officer.decisionError'
+  } catch (caught) {
+    if (caught instanceof ApiError && ['INVALID_STATUS_TRANSITION', 'APPROVAL_NOT_ALLOWED'].includes(caught.code)) {
+      decisionErrorKey.value = 'officer.staleDecision'
+      await load(true)
+    } else {
+      decisionErrorKey.value = 'officer.decisionError'
+    }
   } finally {
     decisionWorking.value = false
   }
@@ -259,6 +266,17 @@ onMounted(load)
           <dt v-if="application.resubmitted_at">{{ t('officer.resubmitted') }}</dt>
           <dd v-if="application.resubmitted_at">{{ formatDate(application.resubmitted_at, locale) }}</dd>
         </dl>
+      </section>
+
+      <section v-if="application.history?.length" class="card mt-7 max-w-4xl" aria-labelledby="officer-history-heading">
+        <h2 id="officer-history-heading" class="text-2xl font-black">{{ t('officer.historyTitle') }}</h2>
+        <ol class="mt-5 space-y-4" role="list">
+          <li v-for="event in application.history" :key="event.id" class="border-l-4 border-sky-700 pl-4">
+            <p class="font-black">{{ t(applicationStatusKey(event.to_status)) }}</p>
+            <p v-if="event.reason" class="mt-1 text-slate-700">{{ t('officer.historyReason', { reason: event.reason }) }}</p>
+            <time class="mt-1 block text-sm text-slate-600" :datetime="event.occurred_at">{{ formatDate(event.occurred_at, locale) }}</time>
+          </li>
+        </ol>
       </section>
 
       <section class="mt-9" aria-labelledby="documents-review-heading">
