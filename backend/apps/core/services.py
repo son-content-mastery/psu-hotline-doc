@@ -392,7 +392,7 @@ def validate_uploaded_file(upload):
                 image.verify()
                 if image.format.lower() != family:
                     raise ValueError("image signature does not match")
-    except (PdfReadError, UnidentifiedImageError, OSError, ValueError, EOFError):
+    except (PdfReadError, UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError, EOFError):
         raise DomainError(
             "UNSUPPORTED_FILE_TYPE",
             "The file is malformed, protected, or does not match its declared type.",

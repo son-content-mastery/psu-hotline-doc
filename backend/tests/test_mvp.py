@@ -465,6 +465,36 @@ def test_upload_validation_rejects_oversize_and_path_names(seeded, settings):
     assert exc_info.value.code == "VALIDATION_ERROR"
 
 
+def test_upload_validation_rejects_decompression_bomb(monkeypatch):
+    upload = make_png("oversized-dimensions.png")
+
+    def raise_bomb(*args, **kwargs):
+        raise Image.DecompressionBombError("synthetic oversized image")
+
+    monkeypatch.setattr("apps.core.services.Image.open", raise_bomb)
+    with pytest.raises(DomainError) as exc_info:
+        validate_uploaded_file(upload)
+    assert exc_info.value.code == "UNSUPPORTED_FILE_TYPE"
+
+
+def test_upload_bundle_rejects_more_than_ten_files(seeded, api_client):
+    application = create_application(seeded["applicant"], seeded["patong"], name="Oversized bundle")
+    requirement = application.requirements.get(document_type__code="PARKING_PHOTOS")
+    api_client.force_authenticate(seeded["applicant"])
+
+    response = api_client.post(
+        f"/api/v1/applications/{application.id}/documents/",
+        {
+            "document_type_id": requirement.document_type_id,
+            "files": [make_png(f"parking-{index}.png") for index in range(11)],
+        },
+        format="multipart",
+    )
+
+    assert response.status_code == 400
+    assert not ApplicationDocument.objects.filter(application=application).exists()
+
+
 def test_photo_requirement_accepts_a_versioned_multi_file_bundle(seeded, api_client):
     application = create_application(seeded["applicant"], seeded["patong"], name="Photo bundle")
     requirement = application.requirements.get(document_type__code="PARKING_PHOTOS")

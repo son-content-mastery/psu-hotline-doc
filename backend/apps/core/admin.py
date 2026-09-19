@@ -189,8 +189,8 @@ class ApplicationAdmin(admin.ModelAdmin):
 
 @admin.register(ApplicationRequirement)
 class ApplicationRequirementAdmin(admin.ModelAdmin):
-    list_display = ("application", "document_type", "is_required", "display_order", "captured_at")
-    readonly_fields = ("application", "document_type", "is_required", "display_order", "captured_at")
+    list_display = ("application", "document_type", "step_code", "is_required", "display_order", "captured_at")
+    readonly_fields = ("application", "document_type", "step_code", "is_required", "display_order", "captured_at")
 
     def has_add_permission(self, request):
         return False
