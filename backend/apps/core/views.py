@@ -753,14 +753,38 @@ class ApplicationListCreateView(ContractAPIView):
 
     @extend_schema(operation_id="list_applicant_applications", responses=PaginatedApplicantApplicationOutputSerializer)
     def get(self, request):
-        queryset = owned_applications(request.user)
+        base_queryset = owned_applications(request.user)
+        summary = {
+            "needs_action": base_queryset.filter(
+                status__in=[Application.Status.DRAFT, Application.Status.READY_TO_SUBMIT, Application.Status.REVISION_REQUIRED]
+            ).count(),
+            "in_progress": base_queryset.filter(
+                status__in=[Application.Status.SUBMITTED, Application.Status.UNDER_REVIEW, Application.Status.RESUBMITTED]
+            ).count(),
+            "approved": base_queryset.filter(status=Application.Status.APPROVED).count(),
+            "total": base_queryset.count(),
+        }
+        queryset = base_queryset
+        view_filter = request.query_params.get("view", "").strip()
+        view_statuses = {
+            "action": [Application.Status.DRAFT, Application.Status.READY_TO_SUBMIT, Application.Status.REVISION_REQUIRED],
+            "in_progress": [Application.Status.SUBMITTED, Application.Status.UNDER_REVIEW, Application.Status.RESUBMITTED],
+            "completed": [Application.Status.APPROVED, Application.Status.REJECTED],
+            "all": Application.Status.values,
+        }
+        if view_filter:
+            if view_filter not in view_statuses:
+                raise DomainError("VALIDATION_ERROR", "Unknown application view.", http_status=status.HTTP_400_BAD_REQUEST)
+            queryset = queryset.filter(status__in=view_statuses[view_filter])
         status_filter = request.query_params.get("status")
         if status_filter:
             if status_filter not in Application.Status.values:
                 raise DomainError("VALIDATION_ERROR", "Unknown status filter.", http_status=status.HTTP_400_BAD_REQUEST)
             queryset = queryset.filter(status=status_filter)
         locale = requested_locale(request)
-        return paginated_response(request, queryset, lambda application: application_summary(application, locale))
+        response = paginated_response(request, queryset, lambda application: application_summary(application, locale))
+        response.data["summary"] = summary
+        return response
 
     @transaction.atomic
     def post(self, request):

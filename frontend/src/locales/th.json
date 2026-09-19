@@ -24,6 +24,7 @@
     "newWindow": "เปิดในหน้าต่างใหม่",
     "lastUpdated": "อัปเดตล่าสุด {date}",
     "unknown": "ไม่ทราบข้อมูล",
+    "pagination": "หน้าผลลัพธ์",
     "actions": {
       "next": "ถัดไป",
       "back": "ย้อนกลับ",

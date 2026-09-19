@@ -91,6 +91,7 @@ describe('applicant dashboard', () => {
     expect(wrapper.text()).not.toContain('Approved stay')
 
     await wrapper.get('select#application-filter').setValue('all')
+    await flushPromises()
     expect(wrapper.text()).toContain('Approved stay')
     wrapper.unmount()
   })

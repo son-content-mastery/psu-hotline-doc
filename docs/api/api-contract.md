@@ -548,7 +548,7 @@ For `6` rooms and `24` guests, the outcome is `NOT_HOTEL`, `requires_license` is
 
 **Permission:** `APPLICANT`; results are always owner-scoped.
 
-**Request example:** `GET /api/v1/applications/?status=REVISION_REQUIRED&page=1`
+**Request example:** `GET /api/v1/applications/?view=action&page=1`. `view` accepts `action`, `in_progress`, `completed`, or `all`; the exact `status` filter remains available for API clients.
 
 **Success**
 
@@ -557,6 +557,7 @@ For `6` rooms and `24` guests, the outcome is `NOT_HOTEL`, `requires_license` is
   "count": 1,
   "next": null,
   "previous": null,
+  "summary": { "needs_action": 1, "in_progress": 2, "approved": 3, "total": 7 },
   "results": [
     {
       "id": 101,

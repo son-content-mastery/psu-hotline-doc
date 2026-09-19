@@ -20,8 +20,10 @@ const propertyType = ref('')
 const ordering = ref<'submitted_at' | '-submitted_at' | 'property_type'>('submitted_at')
 const loading = ref(true)
 const error = ref(false)
+const nextPage = ref<string | null>(null)
+const previousPage = ref<string | null>(null)
 
-async function load(): Promise<void> {
+async function load(url?: string): Promise<void> {
   loading.value = true
   error.value = false
   try {
@@ -35,11 +37,13 @@ async function load(): Promise<void> {
     if (statusFilters[filter.value]) params.set('status', statusFilters[filter.value])
     if (propertyType.value) params.set('property_type', propertyType.value)
     const [response, initialResponse, resubmittedResponse] = await Promise.all([
-      api.get<Paginated<OfficerQueueItem>>(`/api/v1/officer/applications/?${params.toString()}`),
+      api.get<Paginated<OfficerQueueItem>>(url ?? `/api/v1/officer/applications/?${params.toString()}`),
       api.get<Paginated<OfficerQueueItem>>('/api/v1/officer/applications/?status=SUBMITTED'),
       api.get<Paginated<OfficerQueueItem>>('/api/v1/officer/applications/?status=RESUBMITTED'),
     ])
     items.value = response.results
+    nextPage.value = response.next
+    previousPage.value = response.previous
     initialCount.value = initialResponse.count
     resubmittedCount.value = resubmittedResponse.count
   } catch {
@@ -66,7 +70,7 @@ function urgencyClass(item: OfficerQueueItem): string {
   return 'border-slate-400 bg-slate-50 text-slate-800'
 }
 
-watch([filter, propertyType, ordering], load)
+watch([filter, propertyType, ordering], () => load())
 watch(locale, () => Promise.all([load(), loadPropertyTypes()]))
 onMounted(() => Promise.all([load(), loadPropertyTypes()]))
 </script>
@@ -127,7 +131,7 @@ onMounted(() => Promise.all([load(), loadPropertyTypes()]))
       <p v-if="loading" class="mt-7" aria-live="polite">{{ t('officer.queueLoading') }}</p>
       <InlineAlert v-else-if="error" tone="error" class="mt-7 max-w-3xl">
         {{ t('officer.queueError') }}
-        <button type="button" class="ml-2 font-bold underline" @click="load">{{ t('common.actions.retry') }}</button>
+        <button type="button" class="ml-2 font-bold underline" @click="load()">{{ t('common.actions.retry') }}</button>
       </InlineAlert>
       <InlineAlert v-else-if="items.length === 0" tone="info" class="mt-7 max-w-3xl">
         {{ t('officer.queueEmpty') }}
@@ -205,6 +209,10 @@ onMounted(() => Promise.all([load(), loadPropertyTypes()]))
             </RouterLink>
           </li>
         </ul>
+        <nav v-if="previousPage || nextPage" class="mt-7 flex items-center justify-between gap-3" :aria-label="t('common.pagination')">
+          <button type="button" class="button-secondary" :disabled="!previousPage || loading" @click="previousPage && load(previousPage)">{{ t('common.actions.back') }}</button>
+          <button type="button" class="button-secondary" :disabled="!nextPage || loading" @click="nextPage && load(nextPage)">{{ t('common.actions.next') }}</button>
+        </nav>
       </template>
     </template>
   </div>

@@ -6,7 +6,7 @@ import InlineAlert from '@/components/InlineAlert.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import type { ApplicationListItem, Paginated } from '@/types/api'
+import type { ApplicantApplicationSummary, ApplicationListItem, Paginated } from '@/types/api'
 import { applicantApplicationDestination } from '@/utils/domain'
 import { formatDate } from '@/utils/format'
 
@@ -16,6 +16,9 @@ const applications = ref<ApplicationListItem[]>([])
 const filter = ref<'action' | 'in_progress' | 'completed' | 'all'>('action')
 const loading = ref(true)
 const error = ref(false)
+const nextPage = ref<string | null>(null)
+const previousPage = ref<string | null>(null)
+const summary = ref<ApplicantApplicationSummary | null>(null)
 
 function needsAction(application: ApplicationListItem): boolean {
   return application.applicant_action_required || ['DRAFT', 'READY_TO_SUBMIT'].includes(application.status)
@@ -30,10 +33,10 @@ function completed(application: ApplicationListItem): boolean {
 }
 
 const counters = computed(() => [
-  { key: 'action', label: t('application.dashboard.needsAction'), value: applications.value.filter(needsAction).length },
-  { key: 'in_progress', label: t('application.dashboard.inProgress'), value: applications.value.filter(inProgress).length },
-  { key: 'approved', label: t('application.dashboard.approved'), value: applications.value.filter((item) => item.status === 'APPROVED').length },
-  { key: 'all', label: t('application.dashboard.total'), value: applications.value.length },
+  { key: 'action', label: t('application.dashboard.needsAction'), value: summary.value?.needs_action ?? applications.value.filter(needsAction).length },
+  { key: 'in_progress', label: t('application.dashboard.inProgress'), value: summary.value?.in_progress ?? applications.value.filter(inProgress).length },
+  { key: 'approved', label: t('application.dashboard.approved'), value: summary.value?.approved ?? applications.value.filter((item) => item.status === 'APPROVED').length },
+  { key: 'all', label: t('application.dashboard.total'), value: summary.value?.total ?? applications.value.length },
 ])
 
 const visibleApplications = computed(() =>
@@ -51,12 +54,17 @@ const visibleApplications = computed(() =>
     }),
 )
 
-async function load(): Promise<void> {
+async function load(url?: string): Promise<void> {
   loading.value = true
   error.value = false
   try {
-    const response = await api.get<Paginated<ApplicationListItem>>('/api/v1/applications/')
+    const response = await api.get<Paginated<ApplicationListItem> & { summary?: ApplicantApplicationSummary }>(
+      url ?? `/api/v1/applications/?view=${filter.value}`,
+    )
     applications.value = response.results
+    nextPage.value = response.next
+    previousPage.value = response.previous
+    if (response.summary) summary.value = response.summary
   } catch {
     applications.value = []
     error.value = true
@@ -80,7 +88,8 @@ function actionLabel(application: ApplicationListItem): string {
   )
 }
 
-watch(locale, load)
+watch(filter, () => load())
+watch(locale, () => load())
 onMounted(load)
 </script>
 
@@ -107,7 +116,7 @@ onMounted(load)
     <p v-if="loading" class="mt-7" aria-live="polite">{{ t('application.listLoading') }}</p>
     <InlineAlert v-else-if="error" tone="error" class="mt-7">
       {{ t('application.listError') }}
-      <button type="button" class="ml-2 font-bold underline" @click="load">{{ t('common.actions.retry') }}</button>
+      <button type="button" class="ml-2 font-bold underline" @click="load()">{{ t('common.actions.retry') }}</button>
     </InlineAlert>
 
     <template v-else>
@@ -191,6 +200,10 @@ onMounted(load)
           </RouterLink>
         </li>
       </ul>
+      <nav v-if="previousPage || nextPage" class="mt-7 flex items-center justify-between gap-3" :aria-label="t('common.pagination')">
+        <button type="button" class="button-secondary" :disabled="!previousPage || loading" @click="previousPage && load(previousPage)">{{ t('common.actions.back') }}</button>
+        <button type="button" class="button-secondary" :disabled="!nextPage || loading" @click="nextPage && load(nextPage)">{{ t('common.actions.next') }}</button>
+      </nav>
     </template>
   </div>
 </template>

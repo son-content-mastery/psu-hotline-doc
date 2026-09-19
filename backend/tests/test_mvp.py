@@ -1367,6 +1367,8 @@ def test_applicant_list_contains_dashboard_classification_and_progress(seeded, a
     response = api_client.get("/api/v1/applications/", HTTP_ACCEPT_LANGUAGE="en")
     assert response.status_code == 200
     assert response.data["results"]
+    assert response.data["summary"]["total"] == Application.objects.filter(property__owner=seeded["applicant"]).count()
+    assert {"needs_action", "in_progress", "approved", "total"} == set(response.data["summary"])
     item = response.data["results"][0]
     assert item["property_type"]["code"] in {"TYPE_1", "TYPE_2"}
     assert item["responsible_authority"]["id"] == seeded["patong"].id

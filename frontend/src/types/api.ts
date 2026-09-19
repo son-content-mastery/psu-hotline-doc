@@ -29,6 +29,13 @@ export interface Paginated<T> {
   results: T[]
 }
 
+export interface ApplicantApplicationSummary {
+  needs_action: number
+  in_progress: number
+  approved: number
+  total: number
+}
+
 export type ClassificationQuestionKey = 'rooms' | 'guests' | 'max_guests' | 'has_restaurant'
 
 export interface ClassificationQuestion {

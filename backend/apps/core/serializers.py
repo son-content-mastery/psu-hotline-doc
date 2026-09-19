@@ -317,11 +317,19 @@ class ApplicantApplicationListItemOutputSerializer(serializers.Serializer):
     updated_at = serializers.DateTimeField()
 
 
+class ApplicantApplicationSummaryOutputSerializer(serializers.Serializer):
+    needs_action = serializers.IntegerField()
+    in_progress = serializers.IntegerField()
+    approved = serializers.IntegerField()
+    total = serializers.IntegerField()
+
+
 class PaginatedApplicantApplicationOutputSerializer(serializers.Serializer):
     count = serializers.IntegerField()
     next = serializers.CharField(allow_null=True)
     previous = serializers.CharField(allow_null=True)
     results = ApplicantApplicationListItemOutputSerializer(many=True)
+    summary = ApplicantApplicationSummaryOutputSerializer()
 
 
 class RequirementGuidanceOutputSerializer(serializers.Serializer):

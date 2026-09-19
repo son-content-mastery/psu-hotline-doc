@@ -19,7 +19,7 @@ Each card shows reference state, accommodation name, localized status, database-
 
 ## API data
 
-`GET /api/v1/applications/` supplies the type, responsible authority, current stage, applicant-action flag, requirement counts, and timestamps. Vue may group and filter the already owner-scoped page but does not infer workflow permission or retrieve applications individually to construct the list.
+`GET /api/v1/applications/` supplies the type, responsible authority, current stage, applicant-action flag, requirement counts, timestamps, and unpaginated owner-scoped summary counts. The selected dashboard view is applied server-side before pagination. Vue follows `next`/`previous` links and does not infer workflow permission or retrieve applications individually to construct the list.
 
 ## Accessibility and responsiveness
 

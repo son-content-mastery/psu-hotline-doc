@@ -24,6 +24,7 @@
     "newWindow": "opens in a new window",
     "lastUpdated": "Last updated {date}",
     "unknown": "Unknown",
+    "pagination": "Result pages",
     "actions": {
       "next": "Next",
       "back": "Back",
