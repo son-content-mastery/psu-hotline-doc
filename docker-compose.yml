@@ -38,6 +38,13 @@ services:
       RUN_DEMO_SEED: ${RUN_DEMO_SEED:-true}
       PASSWORD_RESET_THROTTLE_RATE: ${PASSWORD_RESET_THROTTLE_RATE:-5/hour}
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-true}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-false}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_TIMEOUT_SECONDS: ${EMAIL_TIMEOUT_SECONDS:-10}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-HoTLinE Doc <noreply@example.test>}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]

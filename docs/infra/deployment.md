@@ -83,6 +83,13 @@ Expected settings:
 | `RUN_DEMO_SEED` | Run the idempotent demo seed from the Compose backend entrypoint | `true` for the Hackathon demo; set `false` outside demo environments. |
 | `PASSWORD_RESET_THROTTLE_RATE` | Anonymous reset request/confirmation throttle | `5/hour` locally; review with the deployed cache/proxy strategy. |
 | `EMAIL_BACKEND` | Django email delivery backend | Console backend for local demo only; configure an approved SMTP/API backend when deployed. |
+| `EMAIL_HOST` | SMTP server hostname | `smtp.gmail.com` for authenticated Gmail SMTP submission. |
+| `EMAIL_PORT` | SMTP submission port | `587` with STARTTLS. |
+| `EMAIL_USE_TLS` | Upgrade the SMTP connection with STARTTLS | `true` for Gmail on port 587. |
+| `EMAIL_USE_SSL` | Use implicit TLS instead of STARTTLS | `false` when `EMAIL_USE_TLS=true`; never enable both. |
+| `EMAIL_HOST_USER` | SMTP login name | Full Gmail or Google Workspace email address. |
+| `EMAIL_HOST_PASSWORD` | SMTP secret | Google App Password in ignored `.env`/secret storage; never the normal Google password. |
+| `EMAIL_TIMEOUT_SECONDS` | SMTP connection timeout | `10` seconds locally; prevents a request from hanging indefinitely. |
 | `DEFAULT_FROM_EMAIL` | Sender identity for password-reset mail | Fictional `example.test` sender locally. |
 | `FRONTEND_BASE_URL` | Trusted base used to build reset links | `http://localhost:5173`; must match the actual browser origin and must not be derived from request headers. |
 | `VITE_API_BASE_URL` | Browser API base | `/api/v1` (relative URL). |
@@ -91,6 +98,34 @@ Expected settings:
 The implementation uses the five explicit `POSTGRES_*` variables above; it does not parse `DATABASE_URL`. When `FRONTEND_PORT` is changed, update both `FRONTEND_BASE_URL` and the matching browser origins in `DJANGO_CSRF_TRUSTED_ORIGINS`.
 
 The local console email backend prints password-reset messages and links in `docker compose logs backend`; it does not deliver real email. Do not use it as evidence of production mail delivery.
+
+### Gmail SMTP for real delivery
+
+Gmail SMTP is only the outbound delivery service. Users still authenticate to HoTLinE Doc with Django accounts; this configuration does not add Google OAuth or “Sign in with Google.”
+
+Use a project-controlled test/Workspace mailbox, enable 2-Step Verification, then create a Google App Password. Google requires 2-Step Verification for App Passwords, and the option may be unavailable for managed accounts, security-key-only 2-Step Verification, or Advanced Protection. In those cases, ask the Workspace administrator to approve the [Google SMTP relay](https://support.google.com/a/answer/176600) or another transactional provider. Never enable legacy “less secure apps” and never put the mailbox's normal password in this repository. See Google's official [App Password instructions](https://support.google.com/mail/answer/185833) and [SMTP client settings](https://support.google.com/mail/answer/7104828).
+
+Keep the console backend until both credential values have been replaced in the ignored `.env`. Then use:
+
+```dotenv
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=true
+EMAIL_USE_SSL=false
+EMAIL_HOST_USER=project-mailbox@gmail.com
+EMAIL_HOST_PASSWORD=replace-with-16-character-google-app-password
+EMAIL_TIMEOUT_SECONDS=10
+DEFAULT_FROM_EMAIL=HoTLinE Doc <project-mailbox@gmail.com>
+```
+
+Do not add quotes or spaces to the App Password value. Restart the backend so Compose receives the new environment:
+
+```bash
+docker compose up -d --force-recreate backend
+```
+
+Request a password reset for a non-production account and confirm that the message arrives and its link begins with the configured `FRONTEND_BASE_URL`. This smoke test proves current SMTP delivery only; applicant activation and workflow notifications remain the planned increment in `docs/security/email-identity-notifications.md`.
 
 ## First start with Docker Compose
 
