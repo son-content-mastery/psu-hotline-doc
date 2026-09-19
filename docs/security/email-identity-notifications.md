@@ -19,6 +19,7 @@ The existing password-reset flow remains in scope and uses the same delivery con
 5. Until verification succeeds, the account cannot create an authenticated session or access protected application data. The UI explains how to resend the email without exposing account existence through the API response.
 6. The activation link is built from configured `FRONTEND_BASE_URL`, not from a request header. It contains a purpose-specific, random/signed, single-use token with a configured expiry.
 7. Successful activation records the server time, invalidates the token, and permits normal login. Reuse, expiry, malformed tokens, or a changed email fail safely without disclosing account details.
+8. The browser may retain only a validated same-origin relative continuation path while the user opens the activation email. It never stores the activation token, password, session identifier, or trusted authorization state; another browser/device falls back to the applicant dashboard.
 
 ### Managed roles
 

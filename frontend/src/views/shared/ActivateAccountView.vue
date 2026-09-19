@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import InlineAlert from '@/components/InlineAlert.vue'
+import { takeActivationRedirect } from '@/services/activationContinuation'
 import { ApiError, api } from '@/services/api'
 
 const route = useRoute()
@@ -15,6 +16,7 @@ const emailInvalid = ref(false)
 const resending = ref(false)
 const resent = ref(false)
 const resendErrorKey = ref('')
+const loginRedirect = ref('/applications')
 
 async function confirm(): Promise<void> {
   if (!token.value) {
@@ -23,6 +25,7 @@ async function confirm(): Promise<void> {
   }
   try {
     await api.post('/api/v1/auth/activation/confirm/', { token: token.value })
+    loginRedirect.value = takeActivationRedirect()
     state.value = 'success'
   } catch {
     state.value = 'error'
@@ -66,7 +69,10 @@ onMounted(confirm)
         <h2 class="text-xl font-black">{{ t('auth.activation.successTitle') }}</h2>
         <p class="mt-2">{{ t('auth.activation.successBody') }}</p>
       </InlineAlert>
-      <RouterLink class="button-primary" :to="{ name: 'login', query: { notice: 'activated' } }">
+      <RouterLink
+        class="button-primary"
+        :to="{ name: 'login', query: { notice: 'activated', intent: 'applicant', redirect: loginRedirect } }"
+      >
         {{ t('auth.activation.signIn') }}
       </RouterLink>
     </div>

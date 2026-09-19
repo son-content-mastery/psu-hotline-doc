@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 
 import InlineAlert from '@/components/InlineAlert.vue'
 import type { AppLocale } from '@/i18n'
+import { rememberActivationRedirect } from '@/services/activationContinuation'
 import { ApiError, api } from '@/services/api'
 
 const route = useRoute()
@@ -72,6 +73,7 @@ async function submit(): Promise<void> {
       language: form.language,
       terms_accepted: form.termsAccepted,
     })
+    rememberActivationRedirect(route.query.redirect)
     submitted.value = true
   } catch (caught) {
     if (caught instanceof ApiError && caught.status === 429) {

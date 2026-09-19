@@ -30,7 +30,10 @@ function createAuthRouter() {
 }
 
 describe('account registration and activation', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    window.localStorage.clear()
+  })
 
   it('creates only an applicant account request and shows the generic email handoff', async () => {
     i18n.global.locale.value = 'en'
@@ -64,6 +67,7 @@ describe('account registration and activation', () => {
     expect(body).not.toHaveProperty('is_staff')
     expect(wrapper.text()).toContain('Check your email to verify the account')
     expect(wrapper.get('a').attributes('href')).toBe('/login?redirect=/applications')
+    expect(window.localStorage.getItem('hotline-doc.activation-redirect')).toBe('/applications')
     wrapper.unmount()
   })
 
@@ -128,6 +132,7 @@ describe('account registration and activation', () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { activated: true }))
     vi.stubGlobal('fetch', fetchMock)
     const router = createAuthRouter()
+    window.localStorage.setItem('hotline-doc.activation-redirect', '/applications/new')
     await router.push('/activate-account?token=signed-token')
     await router.isReady()
     const wrapper = mount(ActivateAccountView, { global: { plugins: [createPinia(), i18n, router] } })
@@ -136,7 +141,10 @@ describe('account registration and activation', () => {
     expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/auth/activation/confirm/')
     expect(JSON.parse(String((fetchMock.mock.calls[0]?.[1] as RequestInit).body))).toEqual({ token: 'signed-token' })
     expect(wrapper.text()).toContain('Your account is ready')
-    expect(wrapper.get('a').attributes('href')).toBe('/login?notice=activated')
+    expect(wrapper.get('a').attributes('href')).toBe(
+      '/login?notice=activated&intent=applicant&redirect=/applications/new',
+    )
+    expect(window.localStorage.getItem('hotline-doc.activation-redirect')).toBeNull()
     wrapper.unmount()
   })
 
