@@ -53,6 +53,7 @@ urlpatterns = [
     ),
     path("applications/<int:pk>/license/", views.ApplicationLicenseView.as_view(), name="application-license"),
     path("officer/applications/", views.OfficerApplicationListView.as_view(), name="officer-applications"),
+    path("officer/case-library/", views.OfficerCaseLibraryView.as_view(), name="officer-case-library"),
     path(
         "officer/applications/<int:pk>/",
         views.OfficerApplicationDetailView.as_view(),

@@ -226,6 +226,10 @@ An authentication adapter/backend owns provider redirects, callback verification
 
 Public verification is the only anonymous route that reads an issued decision artifact. Lookup uses a random UUID token, never the sequential licence number. The response is allow-listed to artifact status/number, property display name/type, issuing authority, and issue/expiry dates. It must not expose applicant identity, application reference, exact address, fee, uploaded files, reasons, or audit history. The QR endpoint encodes only the frontend verification URL and returns a generated SVG; it never accepts arbitrary QR content.
 
+## De-identified Officer Case Library
+
+The case library requires a verified `LOCAL_OFFICER`, but results may draw from completed cases province-wide to support consistent review. The endpoint returns an explicit structured allow-list and a salted case pseudonym. It never returns source authority, database/application/property IDs, applicant, property name, address, reference number, filenames, extracted content, or free-text decision reasons. Database-managed FAQs contain policy guidance only and must not contain real personal data.
+
 ### Expected protocol safeguards
 
 The final choice depends on official ThaiID documentation and approval available at integration time. If the supported flow is OpenID Connect/OAuth 2.0, use Authorization Code flow with PKCE and:

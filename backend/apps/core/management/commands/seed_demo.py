@@ -18,6 +18,7 @@ from apps.core.models import (
     ApplicationDocument,
     ApplicationStatusHistory,
     AuditLog,
+    CaseLibraryArticle,
     ClassificationRule,
     DocumentType,
     DocumentTypeTranslation,
@@ -59,6 +60,36 @@ AUTHORITIES = [
     ("MAI_KHAO_SAO", "อบต.ไม้ขาว"),
     ("SA_KHU_SAO", "อบต.สาคู"),
     ("KAMALA_SAO", "อบต.กมลา"),
+]
+
+CASE_LIBRARY_ARTICLES = [
+    {
+        "slug": "revision-versus-rejection",
+        "question_th": "ควรขอแก้ไขเอกสารหรือปฏิเสธคำขอเมื่อใด",
+        "question_en": "When should an officer request a revision instead of rejecting?",
+        "answer_th": "ใช้การขอแก้ไขเมื่อผู้ยื่นยังแก้เอกสารให้ครบหรือชัดเจนได้ ส่วนการปฏิเสธต้องเป็นผลพิจารณาที่มีเหตุผลชัดเจนตามอำนาจหน้าที่และกติกาที่ตรวจสอบแล้ว",
+        "answer_en": "Request a revision when the applicant can still correct or complete the evidence. Rejection must be a reasoned decision under verified authority and rules.",
+        "keywords": ["revision", "reject", "แก้ไข", "ปฏิเสธ", "เอกสาร"],
+        "display_order": 1,
+    },
+    {
+        "slug": "document-versions",
+        "question_th": "เมื่อมีเอกสารฉบับใหม่ควรตรวจฉบับใด",
+        "question_en": "Which file should be reviewed after a replacement upload?",
+        "answer_th": "ตรวจฉบับปัจจุบันที่ระบบทำเครื่องหมายไว้ โดยเก็บฉบับก่อนหน้าเป็นประวัติและไม่แก้ไขผลตรวจย้อนหลัง",
+        "answer_en": "Review the current version identified by the system. Prior versions remain immutable history and their earlier decisions are not rewritten.",
+        "keywords": ["version", "replacement", "ฉบับ", "อัปโหลดใหม่", "ประวัติ"],
+        "display_order": 2,
+    },
+    {
+        "slug": "similar-cases-are-advisory",
+        "question_th": "ใช้กรณีศึกษาที่คล้ายกันตัดสินแทนการตรวจคำขอได้หรือไม่",
+        "question_en": "Can a similar case replace review of the current application?",
+        "answer_th": "ไม่ได้ กรณีศึกษาใช้เทียบแนวทางเท่านั้น เจ้าหน้าที่ยังต้องตรวจข้อเท็จจริง เอกสาร และกติกาที่มีผลกับคำขอปัจจุบัน",
+        "answer_en": "No. Similar cases are reference material only; the officer must still review the current facts, documents, and applicable rules.",
+        "keywords": ["case", "precedent", "กรณีศึกษา", "แนวทาง", "มาตรฐาน"],
+        "display_order": 3,
+    },
 ]
 
 
@@ -339,6 +370,15 @@ class Command(BaseCommand):
                 },
             )
             authorities[code] = authority
+
+        for article in CASE_LIBRARY_ARTICLES:
+            CaseLibraryArticle.objects.update_or_create(
+                slug=article["slug"],
+                defaults={
+                    **{key: value for key, value in article.items() if key != "slug"},
+                    "is_active": True,
+                },
+            )
 
         property_types = {}
         for code, values in PROPERTY_TYPES.items():

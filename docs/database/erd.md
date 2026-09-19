@@ -244,6 +244,7 @@ erDiagram
     LICENSE {
         bigint id PK
         bigint application_id FK
+        uuid verification_token UK
         string artifact_kind
         string license_number UK
         bigint property_type_id FK
@@ -253,6 +254,19 @@ erDiagram
         integer validity_years_snapshot
         datetime issued_at
         date expires_at
+    }
+
+    CASE_LIBRARY_ARTICLE {
+        bigint id PK
+        string slug UK
+        string question_th
+        string question_en
+        text answer_th
+        text answer_en
+        json keywords
+        integer display_order
+        boolean is_active
+        datetime updated_at
     }
 
     AUDIT_LOG {
@@ -330,6 +344,10 @@ Schedules are append-only/effective-dated master data. Django Admin may close an
 
 `AuditLog.object_type` and `object_id` can refer to several workflow objects without creating one nullable FK per model. This controlled generic reference is appropriate for an append-only cross-cutting log. Domain tables retain their own strongly typed relationships for all functional behavior; no workflow query depends on the generic audit reference.
 
+### Case guidance is master data; cases remain derived
+
+`CaseLibraryArticle` stores bilingual FAQ question/answer text, controlled keywords, display order, and active state for Super Admin maintenance. Case-study results are derived read-only from completed `Application` snapshots and aggregate review counts; no duplicate case record or copied personal data is stored. The API creates its public-facing case reference with a salted one-way digest of the internal application ID.
+
 ## Required Constraints and Indexes
 
 Implement these database protections where supported, with matching application validation:
@@ -347,6 +365,7 @@ Implement these database protections where supported, with matching application 
 | `Application` | unique nullable reference number; indexes `(property_id, status)` and `(responsible_authority_id, status)` |
 | `ApplicationDocument` | unique `(application_id, document_type_id, version, attachment_index)`; conditional unique current row per `(application_id, document_type_id, attachment_index)`; positive version/attachment index/file size |
 | `DocumentPreflight` | unique application document; controlled quality/type result codes and version-bound analyzer metadata; no raw OCR text |
+| `CaseLibraryArticle` | unique slug; keywords must be a JSON list of non-empty strings |
 | `FeeSchedule` | amount ≥ 0, validity years > 0, end ≥ start; prevent overlapping active periods for a property type/currency in validation/constraint |
 | `License` | unique application; unique artifact number; unique opaque verification token; hotel licence requires fee/validity/expiry while notification acknowledgement requires those fields to be null |
 | Histories/audit | indexes by parent/object and descending `created_at`; no product update/delete endpoint |

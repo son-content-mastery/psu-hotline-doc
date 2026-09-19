@@ -330,6 +330,37 @@ export interface OfficerQueueItem {
   documents_pending_review: number
 }
 
+export interface CaseStudy {
+  case_reference: string
+  decision: 'APPROVED' | 'REJECTED'
+  property_type: PropertyType
+  classification: {
+    rooms: number
+    guests: number
+    has_restaurant: boolean
+    outcome: string
+  }
+  revision_rounds: number
+  processing_days: number | null
+  decided_at: string
+  documents: {
+    required: number
+    current_approved: number
+    versions_reviewed: number
+  }
+}
+
+export interface CaseLibraryFaq {
+  slug: string
+  question: string
+  answer: string
+  updated_at: string
+}
+
+export interface CaseLibraryResponse extends Paginated<CaseStudy> {
+  faqs: CaseLibraryFaq[]
+}
+
 export interface DocumentReview {
   id: number
   application_document_id?: number

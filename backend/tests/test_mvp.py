@@ -26,6 +26,7 @@ from apps.core.models import (
     ApplicationDocument,
     ApplicationStatusHistory,
     AuditLog,
+    CaseLibraryArticle,
     ClassificationRule,
     DocumentType,
     DocumentReview,
@@ -1090,6 +1091,16 @@ def test_openapi_describes_enriched_officer_and_requirement_payloads(seeded):
     assert {"description", "instructions", "guidance"} <= set(requirement_properties)
     applicant_properties = schemas["ApplicantApplicationListItemOutput"]["properties"]
     assert {"property_type", "responsible_authority", "requirements", "renewal"} <= set(applicant_properties)
+    case_properties = schemas["CaseStudyOutput"]["properties"]
+    assert {"case_reference", "decision", "classification", "documents"} <= set(case_properties)
+    assert {
+        "application_id",
+        "applicant",
+        "property_name",
+        "address",
+        "reason",
+    }.isdisjoint(case_properties)
+    assert "/api/v1/officer/case-library/" in schema["paths"]
     registration_properties = schemas["Registration"]["properties"]
     assert set(registration_properties) == {"email", "password", "password_confirmation", "terms_accepted"}
     assert "new_password" not in schemas["PasswordResetCompleteOutput"]["properties"]
@@ -1329,6 +1340,59 @@ def test_public_license_verification_uses_opaque_token_and_minimal_fields(seeded
         "verification_url": f"http://frontend.test/verify/{license_record.verification_token}",
         "qr_code_url": f"/api/v1/public/licenses/{license_record.verification_token}/qr/",
     }
+
+
+def test_officer_case_library_is_searchable_deidentified_and_role_protected(seeded, api_client):
+    application = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        type_code="TYPE_2",
+        name="Private case property name",
+    )
+    add_current_documents(application, document_status=ApplicationDocument.Status.APPROVED)
+    _, _ = approve_application(application_id=application.pk, actor=seeded["officer"])
+    CaseLibraryArticle.objects.create(
+        slug="fire-safety-demo",
+        question_th="ตรวจหลักฐานความปลอดภัยอย่างไร",
+        question_en="How should fire-safety evidence be reviewed?",
+        answer_th="ตรวจฉบับปัจจุบันตามข้อกำหนดที่ยืนยันแล้ว",
+        answer_en="Review the current version against validated requirements.",
+        keywords=["fire", "safety", "ความปลอดภัย"],
+    )
+
+    api_client.force_authenticate(seeded["officer"])
+    response = api_client.get(
+        "/api/v1/officer/case-library/?decision=APPROVED&property_type=TYPE_2"
+    )
+    assert response.status_code == 200
+    item = next(result for result in response.data["results"] if result["classification"]["rooms"] == 20)
+    assert item["case_reference"].startswith("CASE-")
+    assert item["decision"] == "APPROVED"
+    assert item["property_type"]["code"] == "TYPE_2"
+    assert set(item["property_type"]) == {"code", "name"}
+    assert item["documents"]["current_approved"] == item["documents"]["required"]
+    assert {
+        "id",
+        "application_id",
+        "reference_number",
+        "property_name",
+        "address",
+        "authority",
+        "applicant",
+        "reason",
+    }.isdisjoint(item)
+    assert "Private case property name" not in str(response.data)
+
+    faq_search = api_client.get("/api/v1/officer/case-library/?q=fire")
+    assert faq_search.status_code == 200
+    assert [article["slug"] for article in faq_search.data["faqs"]] == ["fire-safety-demo"]
+    assert api_client.get(f"/api/v1/officer/case-library/?q={'x' * 101}").status_code == 400
+
+    api_client.force_authenticate(seeded["applicant"])
+    assert api_client.get("/api/v1/officer/case-library/").status_code == 403
+    api_client.force_authenticate(seeded["central"])
+    assert api_client.get("/api/v1/officer/case-library/").status_code == 403
 
 
 def test_session_csrf_login_bootstrap_and_logout(seeded, settings):

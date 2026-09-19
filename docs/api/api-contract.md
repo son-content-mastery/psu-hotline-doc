@@ -1018,6 +1018,20 @@ The allowed formats are PDF, JPG/JPEG, and PNG. The maximum size is 10 MiB. Exte
 
 **Important errors:** `401 AUTHENTICATION_REQUIRED`; `403 PERMISSION_DENIED`, including an officer account without an assigned authority; `400 VALIDATION_ERROR` for invalid filters. Filters never broaden authority scope.
 
+### `GET /api/v1/officer/case-library/`
+
+**Purpose:** Search de-identified completed cases and bilingual review FAQs as advisory reference material.
+
+**Permission:** Verified `LOCAL_OFFICER`. The result pool may include completed cases province-wide because the response is a strict de-identified projection; applicants and central officers receive `403`.
+
+**Query:** `q` (maximum 100 characters), `decision=APPROVED|REJECTED`, `property_type={active code}`, and standard `page`. Keyword search covers type code/name, classification outcome, decision, exact room/guest count, restaurant terms, and FAQ text/keywords.
+
+**Success:** Standard paginated fields plus `faqs`. Each result contains only a salted `case_reference`, decision, localized property type, structured room/guest/restaurant snapshot, revision-round count, processing days, decision date, and aggregate required/approved/reviewed-document counts. FAQs contain `slug`, localized `question`/`answer`, and `updated_at`.
+
+The response never includes source database/application/property IDs, applicant, property name, address, authority, application reference, filenames, extracted document content, or free-text review/decision reasons. There is no endpoint from a case pseudonym back to the source application.
+
+**Important errors:** `400 VALIDATION_ERROR` for an overlong query or unknown decision/property type; `401 AUTHENTICATION_REQUIRED`; `403 PERMISSION_DENIED`.
+
 ### `GET /api/v1/officer/applications/{id}/`
 
 **Purpose:** Return the application, current and prior document versions, reviews, and status context needed for local review.

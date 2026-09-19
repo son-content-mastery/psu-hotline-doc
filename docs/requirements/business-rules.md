@@ -207,6 +207,7 @@ The UI maps codes to translated human language and computes wait duration from s
 | Own application read/write | Own only | Read only when same authority | No individual access required for MVP | Admin as configured |
 | Upload/submit/resubmit | Own only | No | No | Admin as configured |
 | Document/application decision | No | Same authority only | No | Administrative only, not normal flow |
+| De-identified completed-case library | No | Read province-wide structured projection | No | FAQ master data in Admin |
 | Aggregate summary | No | No | Yes | Yes as configured |
 | Master-data management | No | No | No | Django Admin |
 
@@ -234,3 +235,11 @@ All restrictions are enforced in backend querysets/object permissions/domain fun
 - Seed and test data use reserved `.test` emails and obviously fictional names, phone numbers, addresses, identifiers, and files.
 - Never place real identity documents or personal data in source control, fixtures, screenshots, or demo uploads.
 - Demo accounts are not production credentials and must be changed/disabled outside the local Hackathon environment.
+
+## 15. Case Library
+
+- Only terminal `APPROVED` and `REJECTED` applications enter the derived case search pool.
+- Search results are structured reference evidence, not precedent and not an automated decision.
+- The public case reference is a stable salted pseudonym; no reverse lookup endpoint is provided.
+- Never expose application/property IDs, applicant, property name/address, responsible authority, application reference, document names/content, or free-text reasons in the library.
+- Super Admin owns active/order/content changes to bilingual FAQ master data. FAQ keywords are controlled non-empty strings and must not contain personal data.

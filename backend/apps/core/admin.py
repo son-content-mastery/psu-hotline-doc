@@ -11,6 +11,7 @@ from .models import (
     ApplicationRequirement,
     ApplicationStatusHistory,
     AuditLog,
+    CaseLibraryArticle,
     ClassificationRule,
     DocumentReview,
     DocumentType,
@@ -135,6 +136,14 @@ class DocumentTypeAdmin(admin.ModelAdmin):
 class ClassificationRuleAdmin(admin.ModelAdmin):
     list_display = ("code", "priority", "outcome_code", "result_property_type", "is_active", "updated_at")
     list_editable = ("priority", "is_active")
+
+
+@admin.register(CaseLibraryArticle)
+class CaseLibraryArticleAdmin(admin.ModelAdmin):
+    list_display = ("slug", "question_th", "display_order", "is_active", "updated_at")
+    list_filter = ("is_active",)
+    search_fields = ("slug", "question_th", "question_en", "answer_th", "answer_en")
+    list_editable = ("display_order", "is_active")
 
 
 @admin.register(PropertyTypeDocumentRequirement)

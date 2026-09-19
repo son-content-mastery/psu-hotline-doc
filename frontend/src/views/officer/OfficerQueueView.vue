@@ -82,6 +82,9 @@ onMounted(() => Promise.all([load(), loadPropertyTypes()]))
       <p v-if="auth.user?.local_authority" class="page-intro">
         {{ t('officer.authority', { name: auth.user.local_authority.name }) }}
       </p>
+      <RouterLink class="button-secondary mt-5" :to="{ name: 'officer-case-library' }">
+        {{ t('caseLibrary.open') }}
+      </RouterLink>
     </div>
 
     <InlineAlert v-if="!auth.user?.local_authority" tone="error" class="mt-7 max-w-3xl">

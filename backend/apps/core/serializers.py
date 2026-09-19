@@ -352,6 +352,50 @@ class PaginatedOfficerQueueOutputSerializer(serializers.Serializer):
     results = OfficerQueueItemOutputSerializer(many=True)
 
 
+class CaseStudyClassificationOutputSerializer(serializers.Serializer):
+    rooms = serializers.IntegerField()
+    guests = serializers.IntegerField()
+    has_restaurant = serializers.BooleanField()
+    outcome = serializers.CharField()
+
+
+class CaseStudyDocumentSummaryOutputSerializer(serializers.Serializer):
+    required = serializers.IntegerField()
+    current_approved = serializers.IntegerField()
+    versions_reviewed = serializers.IntegerField()
+
+
+class CaseStudyPropertyTypeOutputSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    name = serializers.CharField()
+
+
+class CaseStudyOutputSerializer(serializers.Serializer):
+    case_reference = serializers.CharField()
+    decision = serializers.ChoiceField(choices=["APPROVED", "REJECTED"])
+    property_type = CaseStudyPropertyTypeOutputSerializer()
+    classification = CaseStudyClassificationOutputSerializer()
+    revision_rounds = serializers.IntegerField()
+    processing_days = serializers.IntegerField(allow_null=True)
+    decided_at = serializers.DateTimeField()
+    documents = CaseStudyDocumentSummaryOutputSerializer()
+
+
+class CaseLibraryFaqOutputSerializer(serializers.Serializer):
+    slug = serializers.CharField()
+    question = serializers.CharField()
+    answer = serializers.CharField()
+    updated_at = serializers.DateTimeField()
+
+
+class PaginatedCaseLibraryOutputSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.CharField(allow_null=True)
+    previous = serializers.CharField(allow_null=True)
+    results = CaseStudyOutputSerializer(many=True)
+    faqs = CaseLibraryFaqOutputSerializer(many=True)
+
+
 class RequirementsSummaryOutputSerializer(serializers.Serializer):
     required = serializers.IntegerField()
     approved = serializers.IntegerField()

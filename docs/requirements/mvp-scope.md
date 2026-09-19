@@ -113,6 +113,13 @@ For externally issued items, show database-managed issuing agency, applicable re
 - The public response is deliberately minimal: artifact status/number, property display name and type, issuing authority, issue date, and expiry date. It excludes applicant identity, application reference, exact address, fee, documents, and review history.
 - Hotel licences report `VALID` or `EXPIRED` from the server date; non-hotel acknowledgements report `RECORDED` because they have no licence expiry.
 
+### S2 — Case Library (implemented optional capability)
+
+- Verified local officers may search province-wide completed cases by structured classification facts, accommodation type, and decision.
+- Results are de-identified before leaving the backend: no application/property IDs, applicant, property name, address, authority, application reference, free-text reason, or document content is returned.
+- Case references are stable salted pseudonyms. Results show only decision, structured classification snapshots, revision/document-review counts, and elapsed days.
+- Bilingual FAQs are database master data maintained by Super Admin. Case matches and FAQs are advisory and never replace review of the current evidence and applicable rules.
+
 ### M11 — Minimal Central Overview
 
 - Show total, waiting review, waiting for applicant revision, and approved counts.
@@ -175,7 +182,6 @@ The demo is successful only if applicant ownership, officer authority scoping, s
 Do not implement these until the complete Must Have flow is working:
 
 - full OCR or advanced AI document understanding;
-- historical case search;
 - advanced analytics or officer productivity reports;
 - backup-management UI;
 - discussion/chat;

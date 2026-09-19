@@ -54,6 +54,7 @@ Prefer:
 | Administration | Django Admin | Non-technical external administrators need a dedicated experience |
 | UI components | Semantic local components | Repeated patterns prove a small shared system is valuable |
 | Reporting | ORM aggregates, counters, simple tables/bars | Volume/latency or analytical requirements exceed transactional queries |
+| Case library | Read-only ORM projection from completed cases plus small FAQ master table; no search service or copied case index | Measured data volume or relevance needs a dedicated reviewed search index |
 | Authentication | Standard Django demo auth | ThaiID integration requirements and credentials are available |
 
 ## Dependency Gate

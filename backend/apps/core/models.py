@@ -598,6 +598,35 @@ class DocumentReview(ImmutableEventMixin):
         ordering = ["reviewed_at", "id"]
 
 
+class CaseLibraryArticle(models.Model):
+    slug = models.SlugField(max_length=100, unique=True)
+    question_th = models.CharField(max_length=255)
+    question_en = models.CharField(max_length=255)
+    answer_th = models.TextField()
+    answer_en = models.TextField()
+    keywords = models.JSONField(default=list, blank=True)
+    display_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["display_order", "id"]
+
+    def clean(self):
+        super().clean()
+        if not isinstance(self.keywords, list) or any(
+            not isinstance(item, str) or not item.strip() for item in self.keywords
+        ):
+            raise ValidationError({"keywords": "Use a JSON list of non-empty strings."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.slug
+
+
 class License(models.Model):
     class ArtifactKind(models.TextChoices):
         HOTEL_LICENSE = "HOTEL_LICENSE", "Hotel license"

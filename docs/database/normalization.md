@@ -81,6 +81,10 @@ Every attachment is identified by `(application_id, document_type_id, version, a
 
 `EmailOutbox` is one delivery intent per unique event/recipient. It references the user and optional application instead of copying personal or application data, and stores only the template code, locale, retry state, and redacted error class. Message bodies and signed activation tokens are generated at delivery time and are never persisted. The application status/history remains authoritative even when email delivery is delayed or fails.
 
+### Case guidance is stored; case projections are derived
+
+`CaseLibraryArticle` stores one bilingual FAQ item because question, answer, keywords, order, and active state are independently maintained master data. Completed case cards are not copied into another table: the backend derives a strict de-identified projection from terminal application snapshots and review counts. This prevents a second stale case record and avoids persisting another copy of property or applicant data.
+
 ## Functional Dependency Examples
 
 | Table | Key | Non-key facts depend on |
@@ -91,6 +95,7 @@ Every attachment is identified by `(application_id, document_type_id, version, a
 | `ApplicationDocument` | `(application_id, document_type_id, version, attachment_index)` | that exact attachment in an evidence-bundle version (storage key, uploader, time, current/status) |
 | `FeeSchedule` | `id` | one type/period fee decision (amount, currency, validity, effective dates) |
 | `License` | `application_id` | the one issued result for that application |
+| `CaseLibraryArticle` | `slug` | one maintained FAQ item (bilingual question/answer, keywords, order, active state) |
 
 No translation name determines a master entity, no authority name determines an officer, and no current status determines an application's history.
 
@@ -126,6 +131,7 @@ Unless profiling or an explicit requirement changes the decision, do not persist
 - checklist completion percentages;
 - “days waiting” values;
 - central summary totals; or
+- materialized case-library copies of completed applications; or
 - Type 1/Type 2 fees on PropertyType.
 
 Checklist completion, waiting duration, and central totals are derived from current relational data. User-facing labels are resolved through translations.

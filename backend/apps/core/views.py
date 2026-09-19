@@ -9,12 +9,14 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Count, Max, Q
+from django.db.models.functions import Coalesce
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django.utils.crypto import salted_hmac
 from django.views.decorators.csrf import ensure_csrf_cookie
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -33,6 +35,7 @@ from .models import (
     Application,
     ApplicationDocument,
     ApplicationRequirement,
+    CaseLibraryArticle,
     ClassificationRule,
     DocumentReview,
     DocumentPreflight,
@@ -66,6 +69,7 @@ from .serializers import (
     PasswordResetRequestSerializer,
     PublicLicenseVerificationOutputSerializer,
     PaginatedApplicantApplicationOutputSerializer,
+    PaginatedCaseLibraryOutputSerializer,
     HistoryOutputSerializer,
     OfficerApplicationDetailOutputSerializer,
     PaginatedOfficerQueueOutputSerializer,
@@ -1269,6 +1273,154 @@ class OfficerApplicationListView(ContractAPIView):
             }
 
         return paginated_response(request, queryset, serialize)
+
+
+class OfficerCaseLibraryView(ContractAPIView):
+    permission_classes = [IsLocalOfficer]
+
+    @extend_schema(
+        operation_id="list_officer_case_library",
+        responses=PaginatedCaseLibraryOutputSerializer,
+    )
+    def get(self, request):
+        query = request.query_params.get("q", "").strip()
+        if len(query) > 100:
+            raise DomainError(
+                "VALIDATION_ERROR",
+                "Search text must be 100 characters or fewer.",
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+        decision = request.query_params.get("decision", "").strip().upper()
+        if decision and decision not in {Application.Status.APPROVED, Application.Status.REJECTED}:
+            raise DomainError(
+                "VALIDATION_ERROR",
+                "Decision must be APPROVED or REJECTED.",
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+        property_type = request.query_params.get("property_type", "").strip()
+        if property_type and not PropertyType.objects.filter(code=property_type, is_active=True).exists():
+            raise DomainError(
+                "VALIDATION_ERROR",
+                "Unknown property type filter.",
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = (
+            Application.objects.filter(
+                status__in=[Application.Status.APPROVED, Application.Status.REJECTED],
+                confirmed_property_type__isnull=False,
+            )
+            .select_related("confirmed_property_type")
+            .prefetch_related("confirmed_property_type__translations")
+            .annotate(
+                decision_at=Coalesce("approved_at", "rejected_at", "updated_at"),
+                revision_rounds=Count(
+                    "status_history",
+                    filter=Q(status_history__to_status=Application.Status.REVISION_REQUIRED),
+                    distinct=True,
+                ),
+                required_count=Count(
+                    "requirements",
+                    filter=Q(requirements__is_required=True),
+                    distinct=True,
+                ),
+                current_approved_count=Count(
+                    "documents",
+                    filter=Q(
+                        documents__is_current=True,
+                        documents__status=ApplicationDocument.Status.APPROVED,
+                    ),
+                    distinct=True,
+                ),
+                reviewed_version_count=Count("documents__reviews", distinct=True),
+            )
+            .order_by("-decision_at", "-id")
+        )
+        if decision:
+            queryset = queryset.filter(status=decision)
+        if property_type:
+            queryset = queryset.filter(confirmed_property_type__code=property_type)
+        if query:
+            query_filter = (
+                Q(confirmed_property_type__code__icontains=query)
+                | Q(confirmed_property_type__translations__name__icontains=query)
+                | Q(classification_outcome_snapshot__icontains=query)
+                | Q(status__icontains=query)
+            )
+            normalized_query = query.casefold()
+            if query.isdigit():
+                query_filter |= Q(rooms_snapshot=int(query)) | Q(max_guests_snapshot=int(query))
+            if normalized_query in {"approved", "approve", "อนุมัติ", "ผ่าน"}:
+                query_filter |= Q(status=Application.Status.APPROVED)
+            if normalized_query in {"rejected", "reject", "ปฏิเสธ", "ไม่ผ่าน"}:
+                query_filter |= Q(status=Application.Status.REJECTED)
+            if normalized_query in {"restaurant", "ร้านอาหาร", "มีร้านอาหาร"}:
+                query_filter |= Q(restaurant_snapshot=True)
+            queryset = queryset.filter(query_filter).distinct()
+
+        locale = requested_locale(request)
+
+        def serialize(application):
+            decided_at = application.decision_at
+            processing_days = None
+            if application.submitted_at and decided_at:
+                processing_days = max(0, (decided_at.date() - application.submitted_at.date()).days)
+            type_translation = translated_value(
+                application.confirmed_property_type,
+                locale,
+                fields=("name",),
+            )
+            return {
+                "case_reference": f"CASE-{salted_hmac('case-library', str(application.pk)).hexdigest()[:10].upper()}",
+                "decision": application.status,
+                "property_type": {
+                    "code": application.confirmed_property_type.code,
+                    "name": type_translation["name"],
+                },
+                "classification": {
+                    "rooms": application.rooms_snapshot,
+                    "guests": application.max_guests_snapshot,
+                    "has_restaurant": application.restaurant_snapshot,
+                    "outcome": application.classification_outcome_snapshot,
+                },
+                "revision_rounds": application.revision_rounds,
+                "processing_days": processing_days,
+                "decided_at": decided_at,
+                "documents": {
+                    "required": application.required_count,
+                    "current_approved": application.current_approved_count,
+                    "versions_reviewed": application.reviewed_version_count,
+                },
+            }
+
+        response = paginated_response(request, queryset, serialize)
+        articles = CaseLibraryArticle.objects.filter(is_active=True)
+        if query:
+            normalized_query = query.casefold()
+            articles = [
+                article
+                for article in articles
+                if normalized_query
+                in " ".join(
+                    [
+                        article.question_th,
+                        article.question_en,
+                        article.answer_th,
+                        article.answer_en,
+                        *article.keywords,
+                    ]
+                ).casefold()
+            ]
+        response.data["faqs"] = [
+            {
+                "slug": article.slug,
+                "question": article.question_en if locale == "en" else article.question_th,
+                "answer": article.answer_en if locale == "en" else article.answer_th,
+                "updated_at": article.updated_at,
+            }
+            for article in articles
+        ]
+        return response
 
 
 class OfficerApplicationDetailView(ContractAPIView):

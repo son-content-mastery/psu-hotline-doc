@@ -295,6 +295,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** the known record reports `VALID`, `EXPIRED`, or `RECORDED`; the unknown token returns `404`; the QR contains the opaque-token frontend URL; and neither response nor public UI includes applicant identity, application reference, exact address, fee, documents, or review history.
 
+### TC-33 — Officer case search is useful and de-identified
+
+**Layer:** Backend authorization/privacy/search tests plus officer component test.
+
+**Given** completed applications across the province, bilingual active FAQs, an applicant, a local officer, and a central officer
+
+**When** each role requests the case library and the local officer searches by keyword/type/decision
+
+**Then** only the local officer succeeds; relevant structured cases and FAQs are returned; case references are pseudonymous; and no application/property ID, applicant, property name, address, authority, application reference, filename, free-text reason, or document content appears in the response or UI.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:
@@ -318,7 +328,7 @@ Capture failures and exact commands/output in the final verification notes. Do n
 
 The Hackathon MVP is ready to demo only when:
 
-- TC-01 through TC-32 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
+- TC-01 through TC-33 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
 - the full end-to-end demo acceptance succeeds on a clean seeded database;
 - Django system checks, backend tests, and the frontend production build pass;
 - permission failures have been exercised with at least two applicants and two different local authorities;

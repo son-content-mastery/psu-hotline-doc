@@ -111,6 +111,7 @@ The backend owns:
 - synchronous advisory image-quality and bounded local document-family OCR preflight attached to each uploaded version;
 - the centrally defined application state machine;
 - document review and correction rules;
+- de-identified completed-case search and database-managed bilingual officer FAQs;
 - backend-generated references, fees, and licenses;
 - opaque-token public licence verification and server-generated QR images with an allow-listed response;
 - transactions, status history, and immutable audit records;

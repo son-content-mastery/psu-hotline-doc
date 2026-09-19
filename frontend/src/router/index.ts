@@ -140,6 +140,12 @@ const router = createRouter({
       meta: { titleKey: 'routes.officerQueue', requiresAuth: true, roles: ['LOCAL_OFFICER'] },
     },
     {
+      path: '/officer/cases',
+      name: 'officer-case-library',
+      component: () => import('@/views/officer/OfficerCaseLibraryView.vue'),
+      meta: { titleKey: 'routes.officerCases', requiresAuth: true, roles: ['LOCAL_OFFICER'] },
+    },
+    {
       path: '/officer/applications/:id(\\d+)',
       name: 'officer-review',
       component: () => import('@/views/officer/OfficerReviewView.vue'),
