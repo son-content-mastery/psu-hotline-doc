@@ -1,6 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.db import transaction
 
+from .notifications import queue_activation_email
+from .services import audit_event
+from .session_security import invalidate_user_sessions
 from .models import (
     Application,
     ApplicationDocument,
@@ -57,6 +61,36 @@ class UserAdmin(DjangoUserAdmin):
             },
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        tracked_fields = ("email", "role", "local_authority_id", "is_active", "email_verified_at")
+        before = None
+        if change:
+            before = User.objects.filter(pk=obj.pk).values(*tracked_fields).first()
+
+        with transaction.atomic():
+            super().save_model(request, obj, form, change)
+            if before is None:
+                audit_event(actor=request.user, action="USER_ADMIN_CREATED", obj=obj)
+                invalidate_user_sessions(obj.pk)
+                if obj.is_active and obj.email_verified_at is None:
+                    queue_activation_email(obj)
+                return
+
+            changed = {field for field in tracked_fields if before[field] != getattr(obj, field)}
+            actions = {
+                "email": "USER_EMAIL_CHANGED",
+                "role": "USER_ROLE_CHANGED",
+                "local_authority_id": "USER_AUTHORITY_CHANGED",
+                "is_active": "USER_ACTIVE_STATUS_CHANGED",
+                "email_verified_at": "USER_VERIFICATION_CHANGED",
+            }
+            for field in sorted(changed):
+                audit_event(actor=request.user, action=actions[field], obj=obj)
+            if changed:
+                invalidate_user_sessions(obj.pk)
+            if "email" in changed and obj.is_active and obj.email_verified_at is None:
+                queue_activation_email(obj)
 
 
 class PropertyTypeTranslationInline(admin.TabularInline):

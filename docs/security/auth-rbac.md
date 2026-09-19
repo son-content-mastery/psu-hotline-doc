@@ -120,7 +120,7 @@ This restriction applies to queue counts, searches, detail views, documents, dow
 
 ### Admin boundary
 
-Django Admin requires `is_staff`, relevant Django model permissions, and the `SUPER_ADMIN` role used by this project. Production-like deployments should use individual admin accounts, not a shared credential. Audit and status-history records are read-only in Admin; corrections are represented by a new event rather than rewriting history.
+Django Admin requires `is_staff`, relevant Django model permissions, and the `SUPER_ADMIN` role used by this project. Production-like deployments should use individual admin accounts, not a shared credential. Audit and status-history records are read-only in Admin; corrections are represented by a new event rather than rewriting history. Admin changes to email, role, authority, active state, or verification state create immutable audit events and invalidate that user's active server-side sessions. Changing an email clears verification and queues a new activation message.
 
 ### Enforcement pattern
 
