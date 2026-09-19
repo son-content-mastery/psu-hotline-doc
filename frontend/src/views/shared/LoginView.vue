@@ -64,6 +64,7 @@ async function submit(): Promise<void> {
   try {
     const user = await auth.login(form.email.trim(), form.password)
     if (user.role !== expectedRole.value) {
+      await auth.logout()
       submitErrorKey.value = 'auth.roleMismatch'
       return
     }

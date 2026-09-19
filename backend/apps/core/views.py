@@ -42,7 +42,7 @@ from .models import (
     PropertyTypeDocumentRequirement,
     User,
 )
-from .permissions import IsApplicant, IsCentralOfficer, IsLocalOfficer
+from .permissions import IsApplicant, IsCentralOfficer, IsLocalOfficer, IsVerifiedUser
 from .notifications import activate_user_from_token, queue_activation_email
 from .serializers import (
     ActivationCompleteOutputSerializer,
@@ -514,7 +514,7 @@ class LoginView(ContractAPIView):
     permission_classes = [AllowAny]
     authentication_classes = []
     serializer_class = LoginSerializer
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [ScopedRateThrottle, AccountEmailRateThrottle]
     throttle_scope = "login"
 
     def post(self, request):
@@ -1415,7 +1415,7 @@ class CentralSummaryView(ContractAPIView):
 
 
 class ApplicationLicenseView(ContractAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsVerifiedUser]
 
     def get(self, request, pk):
         if request.user.role == User.Role.APPLICANT:

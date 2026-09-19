@@ -87,4 +87,51 @@ describe('login experience', () => {
     expect(wrapper.text()).toContain('If an unverified account matches this email')
     wrapper.unmount()
   })
+
+  it('clears the authenticated session when the selected portal does not match the account role', async () => {
+    i18n.global.locale.value = 'en'
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/login', name: 'login', component: LoginView },
+        { path: '/applications', name: 'application-list', component: Page },
+        { path: '/register', name: 'register', component: Page },
+        { path: '/forgot-password', name: 'forgot-password', component: Page },
+      ],
+    })
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: vi.fn().mockResolvedValue({
+          user: { id: 9, email: 'central@example.test', display_name: 'Central', role: 'CENTRAL_OFFICER' },
+        }),
+      })
+      .mockResolvedValueOnce({
+        status: 204,
+        ok: true,
+        headers: new Headers(),
+        json: vi.fn(),
+      })
+    vi.stubGlobal('fetch', fetchMock)
+    const pinia = createPinia()
+    await router.push('/login?intent=applicant&redirect=/applications')
+    await router.isReady()
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, i18n, router] } })
+
+    await wrapper.get('#email').setValue('central@example.test')
+    await wrapper.get('#password').setValue('Secure-passphrase-2026')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
+      '/api/v1/auth/login/',
+      '/api/v1/auth/logout/',
+    ])
+    expect(wrapper.text()).toContain('This account does not have the role needed for the selected area.')
+    expect(router.currentRoute.value.name).toBe('login')
+    wrapper.unmount()
+  })
 })
