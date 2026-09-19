@@ -762,6 +762,22 @@
     "none": "There is no active maintenance notice.",
     "error": "System status could not be loaded."
   },
+  "discussion": {
+    "title": "Application conversation",
+    "intro": "Keep questions and answers with this application instead of relying on phone calls.",
+    "empty": "No messages have been recorded.",
+    "messageLabel": "New message",
+    "evidenceNotice": "Messages become part of the application record and cannot be edited or deleted.",
+    "send": "Send message",
+    "sending": "Sending message…",
+    "closed": "This conversation is read-only because the application is not active.",
+    "loadError": "The conversation could not be loaded.",
+    "sendError": "The message could not be sent.",
+    "sender": {
+      "APPLICANT": "Applicant",
+      "LOCAL_OFFICER": "Local officer"
+    }
+  },
   "verification": {
     "eyebrow": "Public service",
     "title": "Verify a licence",

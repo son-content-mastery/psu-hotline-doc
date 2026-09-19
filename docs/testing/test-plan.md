@@ -345,6 +345,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** the dump is custom-format, verified, checksummed, mode `0600`, retained by configured count, and does not place the database password in arguments; the API/UI return only the active localized notice and time window.
 
+### TC-38 — Application discussion is scoped and immutable
+
+**Layer:** Backend API/RBAC/model tests plus shared conversation component test.
+
+**Given** an active submitted application, its owner, same-authority officer, another-authority officer, and central officer
+
+**When** owner and assigned officer exchange messages
+
+**Then** both see the same server-timestamped sequence; cross-authority access is `404`, central access is `403`, completed/draft posting is rejected, messages cannot be edited/deleted, and the UI sends trimmed text without attachment or identity controls.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:

@@ -1246,6 +1246,14 @@ For a non-hotel notification, `artifact_kind` is `NOTIFICATION_ACKNOWLEDGEMENT`,
 
 **Errors:** `404 NOT_FOUND`, `409 ASSISTANCE_NOT_AVAILABLE`, or `409 ASSISTANCE_ALREADY_OPEN`.
 
+### `GET|POST /api/v1/applications/{id}/discussion/`
+
+**Permission:** Owning verified applicant. `GET` returns immutable messages oldest first. `POST` accepts `{ "body": "..." }` up to 2,000 characters only while the submitted application is active.
+
+### `GET|POST /api/v1/officer/applications/{id}/discussion/`
+
+**Permission:** Verified local officer assigned to the application's authority. Behavior matches the applicant endpoint. Each message returns only `id`, `sender_category`, `body`, and server `created_at`; it cannot be updated or deleted.
+
 ---
 
 ## Central overview

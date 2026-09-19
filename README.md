@@ -22,6 +22,7 @@ This repository contains a two-day Hackathon MVP intended for local demonstratio
 - Read-only central overview with all 19 configured Phuket authorities, accessible area detail, average stage waits, and aggregate unusually-old-work signals.
 - Structured local-to-central guidance requests that expose no applicant, property, address, file, application, officer, or authority identity.
 - Scheduled, verified PostgreSQL backups with retention plus bilingual maintenance notices managed in Django Admin.
+- Immutable per-application conversation between the applicant and the responsible local authority.
 - Monthly rotating pseudonymous officer workload counts with minimum-group suppression; no officer identity or authority is returned.
 - Transactional activation, workflow, and configurable licence-expiry reminder email through a PostgreSQL outbox with bounded retry. Gmail SMTP is supported as delivery transport, not Google OAuth.
 - Thai and English UI, backend-enforced RBAC, immutable audit records, and automated backend/frontend coverage.

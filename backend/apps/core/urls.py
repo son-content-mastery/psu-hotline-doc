@@ -46,6 +46,7 @@ urlpatterns = [
     ),
     path("applications/<int:pk>/submit/", views.ApplicationSubmitView.as_view(), name="application-submit"),
     path("applications/<int:pk>/history/", views.ApplicationHistoryView.as_view(), name="application-history"),
+    path("applications/<int:pk>/discussion/", views.ApplicationDiscussionView.as_view(), name="application-discussion"),
     path("applications/<int:pk>/documents/", views.ApplicationDocumentsView.as_view(), name="application-documents"),
     path(
         "applications/<int:pk>/documents/<int:document_id>/file/",
@@ -89,6 +90,11 @@ urlpatterns = [
         "officer/applications/<int:pk>/central-assistance/",
         views.OfficerCentralAssistanceView.as_view(),
         name="officer-central-assistance",
+    ),
+    path(
+        "officer/applications/<int:pk>/discussion/",
+        views.OfficerApplicationDiscussionView.as_view(),
+        name="officer-application-discussion",
     ),
     path("central/summary/", views.CentralSummaryView.as_view(), name="central-summary"),
     path("central/assistance/", views.CentralAssistanceListView.as_view(), name="central-assistance-list"),

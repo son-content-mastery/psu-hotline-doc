@@ -140,6 +140,13 @@ For externally issued items, show database-managed issuing agency, applicable re
 - Super Admin can schedule bilingual maintenance notices; an anonymous status endpoint drives the global banner and public details page.
 - Restore remains a deliberate operator action into a prepared database; the application never overwrites the live database automatically.
 
+### C1 — Application Discussion (implemented optional capability)
+
+- Applicant and same-authority local officers may exchange text messages on an active submitted application.
+- Messages are immutable evidence, ordered by server timestamp, limited to 2,000 characters, and cannot be edited or deleted.
+- Completed/draft applications expose the existing conversation read-only; cross-owner, cross-authority, and central access is denied.
+- Message audit events record creation without duplicating message content in the audit reason.
+
 ### S6 — Pseudonymous Workload (implemented optional capability)
 
 - Count document reviews and terminal application decisions per contributing local officer for the current calendar month.

@@ -41,6 +41,7 @@ from .models import (
     ClassificationRule,
     DocumentReview,
     DocumentPreflight,
+    DiscussionMessage,
     DocumentType,
     FeeSchedule,
     IssuingAgency,
@@ -66,6 +67,7 @@ from .serializers import (
     CentralAssistanceResolutionSerializer,
     ClassificationInputSerializer,
     DocumentReviewSerializer,
+    DiscussionMessageSerializer,
     EmptySerializer,
     LoginSerializer,
     PasswordResetConfirmSerializer,
@@ -1861,6 +1863,70 @@ class OfficerCentralAssistanceView(ContractAPIView):
             )
             audit_event(actor=request.user, action="CENTRAL_ASSISTANCE_REQUESTED", obj=item)
         return Response(central_assistance_data(item), status=status.HTTP_201_CREATED)
+
+
+def discussion_message_data(message):
+    return {
+        "id": message.id,
+        "sender_category": message.sender.role,
+        "body": message.body,
+        "created_at": message.created_at,
+    }
+
+
+class ApplicationDiscussionView(ContractAPIView):
+    permission_classes = [IsApplicant]
+    serializer_class = DiscussionMessageSerializer
+
+    def get_application(self, request, pk):
+        return get_object_or_404(Application.objects.filter(property__owner=request.user), pk=pk)
+
+    def get(self, request, pk):
+        application = self.get_application(request, pk)
+        return Response({"results": [discussion_message_data(item) for item in application.discussion_messages.all()]})
+
+    def post(self, request, pk):
+        application = self.get_application(request, pk)
+        return create_discussion_message(request, application)
+
+
+class OfficerApplicationDiscussionView(ContractAPIView):
+    permission_classes = [IsLocalOfficer]
+    serializer_class = DiscussionMessageSerializer
+
+    def get_application(self, request, pk):
+        return get_object_or_404(officer_applications(request.user), pk=pk)
+
+    def get(self, request, pk):
+        application = self.get_application(request, pk)
+        return Response({"results": [discussion_message_data(item) for item in application.discussion_messages.all()]})
+
+    def post(self, request, pk):
+        application = self.get_application(request, pk)
+        return create_discussion_message(request, application)
+
+
+def create_discussion_message(request, application):
+    if application.status not in {
+        Application.Status.SUBMITTED,
+        Application.Status.UNDER_REVIEW,
+        Application.Status.REVISION_REQUIRED,
+        Application.Status.RESUBMITTED,
+    }:
+        raise DomainError(
+            "DISCUSSION_CLOSED",
+            "Messages are available only while the submitted application is active.",
+        )
+    serializer = DiscussionMessageSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    with transaction.atomic():
+        message = DiscussionMessage.objects.create(
+            application=application,
+            sender=request.user,
+            body=serializer.validated_data["body"],
+        )
+        audit_event(actor=request.user, action="DISCUSSION_MESSAGE_CREATED", obj=message)
+    return Response(discussion_message_data(message), status=status.HTTP_201_CREATED)
 
 
 class CentralAssistanceListView(ContractAPIView):

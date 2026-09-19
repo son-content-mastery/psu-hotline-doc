@@ -32,6 +32,7 @@ from apps.core.models import (
     ClassificationRule,
     DocumentType,
     DocumentReview,
+    DiscussionMessage,
     DocumentPreflight,
     EmailOutbox,
     FeeSchedule,
@@ -1175,6 +1176,54 @@ def test_database_backup_is_private_verified_and_has_no_credential_arguments(set
     assert settings.DATABASES["default"]["PASSWORD"] not in dump_command
     assert dump_kwargs["env"]["PGPASSWORD"] == settings.DATABASES["default"]["PASSWORD"]
     assert any(command[0] == "pg_restore" for command, _ in commands)
+
+
+def test_application_discussion_is_owner_authority_scoped_and_immutable(seeded, api_client):
+    application = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        name="Discussion property",
+    )
+    api_client.force_authenticate(seeded["applicant"])
+    applicant_message = api_client.post(
+        f"/api/v1/applications/{application.id}/discussion/",
+        {"body": "Please confirm which corrected page is required."},
+        format="json",
+    )
+    assert applicant_message.status_code == 201
+    assert applicant_message.data["sender_category"] == User.Role.APPLICANT
+
+    api_client.force_authenticate(seeded["officer"])
+    listed = api_client.get(f"/api/v1/officer/applications/{application.id}/discussion/")
+    assert listed.data["results"] == [applicant_message.data]
+    officer_message = api_client.post(
+        f"/api/v1/officer/applications/{application.id}/discussion/",
+        {"body": "Please replace page two with a readable copy."},
+        format="json",
+    )
+    assert officer_message.status_code == 201
+    assert officer_message.data["sender_category"] == User.Role.LOCAL_OFFICER
+
+    other_authority = LocalAuthority.objects.exclude(pk=seeded["patong"].pk).first()
+    other_officer = User.objects.create_user(
+        email="discussion.other@example.test",
+        password="pass",
+        display_name="Other discussion officer",
+        role=User.Role.LOCAL_OFFICER,
+        local_authority=other_authority,
+        email_verified_at=timezone.now(),
+    )
+    api_client.force_authenticate(other_officer)
+    assert api_client.get(f"/api/v1/officer/applications/{application.id}/discussion/").status_code == 404
+    api_client.force_authenticate(seeded["central"])
+    assert api_client.get(f"/api/v1/officer/applications/{application.id}/discussion/").status_code == 403
+
+    stored = DiscussionMessage.objects.get(pk=applicant_message.data["id"])
+    stored.body = "Changed later"
+    with pytest.raises(ValidationError):
+        stored.save()
+    assert AuditLog.objects.filter(action="DISCUSSION_MESSAGE_CREATED").count() == 2
 
 
 def test_database_driven_checklist_and_external_guidance(seeded, api_client):

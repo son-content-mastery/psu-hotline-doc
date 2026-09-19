@@ -188,6 +188,10 @@ class CentralAssistanceResolutionSerializer(StrictSerializer):
     resolution_code = serializers.ChoiceField(choices=CentralAssistanceRequest.ResolutionCode.choices)
 
 
+class DiscussionMessageSerializer(StrictSerializer):
+    body = serializers.CharField(max_length=2000, trim_whitespace=True, allow_blank=False)
+
+
 # Explicit response schemas keep drf-spectacular aligned with the richer MVP payloads.
 class AuthorityOutputSerializer(serializers.Serializer):
     id = serializers.IntegerField()

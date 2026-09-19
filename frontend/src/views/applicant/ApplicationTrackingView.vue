@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import InlineAlert from '@/components/InlineAlert.vue'
+import ApplicationDiscussion from '@/components/ApplicationDiscussion.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { api, ApiError } from '@/services/api'
 import type { Application, HistoryEvent, HistoryResponse, License, RequirementItem, RequirementsResponse } from '@/types/api'
@@ -268,6 +269,11 @@ onMounted(() => load())
           </li>
         </ol>
       </section>
+
+      <ApplicationDiscussion
+        :endpoint="`/api/v1/applications/${applicationId}/discussion/`"
+        :can-post="['SUBMITTED', 'UNDER_REVIEW', 'REVISION_REQUIRED', 'RESUBMITTED'].includes(application.status)"
+      />
     </template>
   </div>
 </template>

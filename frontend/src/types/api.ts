@@ -328,6 +328,13 @@ export interface HistoryResponse {
   events: HistoryEvent[]
 }
 
+export interface DiscussionMessage {
+  id: number
+  sender_category: 'APPLICANT' | 'LOCAL_OFFICER'
+  body: string
+  created_at: string
+}
+
 export interface OfficerQueueItem {
   id: number
   reference_number: string

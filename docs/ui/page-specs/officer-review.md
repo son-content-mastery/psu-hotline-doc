@@ -14,6 +14,10 @@ LocalAuthority scope is enforced by the backend on list, detail, file access, re
 
 While an application is in local review, show one compact “ขอคำแนะนำจากส่วนกลาง / Request central guidance” section. The officer selects one controlled topic; there is no free-text or attachment input. Explain exactly which structured snapshot is shared and which identity fields are excluded. Show prior request status and the controlled resolution, allow only one open request, and keep all application/document decisions with the local officer.
 
+## Application conversation
+
+Show the immutable text conversation after review controls. Identify messages only as applicant or local officer, show the server timestamp, and make clear that messages become evidence and cannot be edited or deleted. The composer is available only while the submitted application is active.
+
 ## Authentication and entry
 
 The homepage staff CTA opens login before any officer data. After a successful Local Officer login, route to the queue. If an authenticated user lacks this role, show a localized neutral authorization message and a safe destination; never render the queue briefly before redirecting.

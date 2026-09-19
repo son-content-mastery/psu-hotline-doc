@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import InlineAlert from '@/components/InlineAlert.vue'
+import ApplicationDiscussion from '@/components/ApplicationDiscussion.vue'
 import DocumentPreflight from '@/components/DocumentPreflight.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { api, ApiError } from '@/services/api'
@@ -633,6 +634,11 @@ onMounted(load)
           </button>
         </form>
       </section>
+
+      <ApplicationDiscussion
+        :endpoint="`/api/v1/officer/applications/${applicationId}/discussion/`"
+        :can-post="['SUBMITTED', 'UNDER_REVIEW', 'REVISION_REQUIRED', 'RESUBMITTED'].includes(application.status)"
+      />
 
       <InlineAlert v-if="issuedLicense" tone="success" class="mt-6 max-w-4xl">
         {{

@@ -6,6 +6,8 @@
 - Authentication: applicant owner only
 - Main task: understand the application's current state and whether the applicant must do anything now.
 
+The page also shows the immutable applicant/local-officer conversation for this application. Messages use role labels and server timestamps, remain readable after completion, and can be posted only while the submitted application is active. Explain that messages are evidence and cannot be edited or deleted.
+
 The backend enforces object ownership. A frontend route guard improves navigation but is never the permission boundary.
 
 ## Required information hierarchy

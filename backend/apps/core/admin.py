@@ -15,6 +15,7 @@ from .models import (
     CentralAssistanceRequest,
     ClassificationRule,
     DocumentReview,
+    DiscussionMessage,
     DocumentType,
     DocumentTypeTranslation,
     EmailOutbox,
@@ -155,6 +156,21 @@ class CentralAssistanceRequestAdmin(admin.ModelAdmin):
     readonly_fields = tuple(field.name for field in CentralAssistanceRequest._meta.fields)
 
     def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(DiscussionMessage)
+class DiscussionMessageAdmin(admin.ModelAdmin):
+    list_display = ("application", "sender", "created_at")
+    list_filter = ("sender__role", "created_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, request, obj=None):

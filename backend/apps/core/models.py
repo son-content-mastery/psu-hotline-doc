@@ -598,6 +598,17 @@ class DocumentReview(ImmutableEventMixin):
         ordering = ["reviewed_at", "id"]
 
 
+class DiscussionMessage(ImmutableEventMixin):
+    application = models.ForeignKey(Application, on_delete=models.PROTECT, related_name="discussion_messages")
+    sender = models.ForeignKey(User, on_delete=models.PROTECT, related_name="discussion_messages")
+    body = models.TextField(max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        indexes = [models.Index(fields=["application", "created_at"], name="discussion_app_time_idx")]
+
+
 class CaseLibraryArticle(models.Model):
     slug = models.SlugField(max_length=100, unique=True)
     question_th = models.CharField(max_length=255)
