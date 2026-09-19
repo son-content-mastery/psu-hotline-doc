@@ -37,7 +37,10 @@ const summary = {
     authority(4, 'Karon Municipality', 1),
     authority(5, 'Rawai Municipality', 1),
     authority(6, 'Wichit Municipality', 1),
+    ...Array.from({ length: 13 }, (_, index) => authority(index + 7, `Authority ${index + 7}`, 0)),
   ],
+  authority_count: 19,
+  expected_authority_count: 19,
   authority_zeroes_included: true,
   by_current_stage: [{ stage: 'LOCAL_OFFICER_REVIEW', count: 1 }],
 }
@@ -69,7 +72,7 @@ describe('central overview', () => {
     expect(wrapper.findAll('#authority-table tbody tr')).toHaveLength(5)
 
     await wrapper.get('#authority-list-toggle').trigger('click')
-    expect(wrapper.findAll('#authority-table tbody tr')).toHaveLength(6)
+    expect(wrapper.findAll('#authority-table tbody tr')).toHaveLength(19)
 
     await wrapper.get('button.button-secondary').trigger('click')
     await flushPromises()

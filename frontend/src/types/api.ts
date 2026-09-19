@@ -330,6 +330,7 @@ export interface CentralSummary {
   by_property_type: CentralBreakdownItem[]
   by_local_authority: CentralAuthoritySummary[]
   authority_count: number
+  expected_authority_count: number
   authority_zeroes_included: boolean
   by_current_stage: CentralStageItem[]
 }

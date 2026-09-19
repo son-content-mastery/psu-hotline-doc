@@ -83,6 +83,9 @@ function isCompleteResponse(value: CentralSummary): boolean {
     ) &&
     Array.isArray(value.by_property_type) &&
     Array.isArray(value.by_local_authority) &&
+    value.authority_count === value.by_local_authority.length &&
+    value.expected_authority_count === 19 &&
+    value.authority_count === value.expected_authority_count &&
     value.by_local_authority.every(
       (item) =>
         typeof item.totals?.applications === 'number' &&

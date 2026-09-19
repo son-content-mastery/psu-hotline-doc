@@ -1396,6 +1396,7 @@ class CentralSummaryView(ContractAPIView):
                 "by_property_type": by_property_type,
                 "by_local_authority": authority_breakdown,
                 "authority_count": len(authority_breakdown),
+                "expected_authority_count": settings.EXPECTED_LOCAL_AUTHORITY_COUNT,
                 "authority_zeroes_included": True,
                 "by_current_stage": [
                     {"stage": stage, "count": count} for stage, count in sorted(stages.items())

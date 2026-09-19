@@ -106,6 +106,7 @@ Expected settings:
 | `EMAIL_OUTBOX_RETRY_BASE_SECONDS` | Base for bounded exponential retry delay | `60`. |
 | `EMAIL_OUTBOX_POLL_SECONDS` | Worker polling interval | `30`. |
 | `WORKFLOW_NOTIFICATION_EMAIL_ENABLED` | Queue documented workflow messages | `true`; does not disable security-critical activation/reset mail. |
+| `EXPECTED_LOCAL_AUTHORITY_COUNT` | Expected configured Phuket authority coverage used to validate central summaries | `19` for the supplied Hackathon scope. |
 | `DEFAULT_FROM_EMAIL` | Sender identity for password-reset mail | Fictional `example.test` sender locally. |
 | `FRONTEND_BASE_URL` | Trusted base used to build reset links | `http://localhost:5173`; must match the actual browser origin and must not be derived from request headers. |
 | `VITE_API_BASE_URL` | Browser API base | `/api/v1` (relative URL). |

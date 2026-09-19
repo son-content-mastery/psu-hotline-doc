@@ -771,6 +771,7 @@ def test_central_summary_is_aggregate_only_and_role_separated(seeded, api_client
     }
     assert response.data["authority_zeroes_included"] is True
     assert response.data["authority_count"] == len(response.data["by_local_authority"])
+    assert response.data["expected_authority_count"] == 19
     assert len(response.data["by_local_authority"]) == LocalAuthority.objects.filter(is_active=True).count()
     assert all(item["count"] > 0 for item in response.data["by_local_authority"])
     for item in response.data["by_local_authority"]:
