@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import InlineAlert from '@/components/InlineAlert.vue'
-import { ApiError } from '@/services/api'
+import { api, ApiError } from '@/services/api'
 import { safeRelativeRedirect } from '@/services/sessionExpiry'
 import { useAuthStore } from '@/stores/auth'
 import type { Role } from '@/types/api'
@@ -19,6 +19,8 @@ const fieldErrors = reactive({ email: false, password: false })
 const submitErrorKey = ref('')
 const submitting = ref(false)
 const showPassword = ref(false)
+const activationResent = ref(false)
+const resendingActivation = ref(false)
 
 const intent = computed(() => (typeof route.query.intent === 'string' ? route.query.intent : 'applicant'))
 const introKey = computed(() => {
@@ -56,6 +58,7 @@ function validate(): boolean {
 
 async function submit(): Promise<void> {
   submitErrorKey.value = ''
+  activationResent.value = false
   if (!validate()) return
   submitting.value = true
   try {
@@ -66,11 +69,26 @@ async function submit(): Promise<void> {
     }
     await router.replace(safeRedirect())
   } catch (caught) {
-    if (caught instanceof ApiError && caught.status === 429) submitErrorKey.value = 'auth.rateLimited'
+    if (caught instanceof ApiError && caught.code === 'EMAIL_NOT_VERIFIED') submitErrorKey.value = 'auth.activationRequired'
+    else if (caught instanceof ApiError && caught.status === 429) submitErrorKey.value = 'auth.rateLimited'
     else if (caught instanceof ApiError && caught.status === 401) submitErrorKey.value = 'auth.invalid'
     else submitErrorKey.value = 'common.genericError'
   } finally {
     submitting.value = false
+  }
+}
+
+async function resendActivation(): Promise<void> {
+  resendingActivation.value = true
+  activationResent.value = false
+  try {
+    await api.post('/api/v1/auth/activation/resend/', { email: form.email.trim() })
+    activationResent.value = true
+    submitErrorKey.value = ''
+  } catch (caught) {
+    submitErrorKey.value = caught instanceof ApiError && caught.status === 429 ? 'auth.rateLimited' : 'common.genericError'
+  } finally {
+    resendingActivation.value = false
   }
 }
 </script>
@@ -83,7 +101,13 @@ async function submit(): Promise<void> {
     <InlineAlert v-if="route.query.notice === 'expired'" tone="warning" live="polite" class="mt-6">
       {{ t('auth.sessionExpired') }}
     </InlineAlert>
+    <InlineAlert v-if="route.query.notice === 'activated'" tone="success" live="polite" class="mt-6">
+      {{ t('auth.accountActivated') }}
+    </InlineAlert>
     <InlineAlert v-if="submitErrorKey" tone="error" class="mt-6">{{ t(submitErrorKey) }}</InlineAlert>
+    <InlineAlert v-if="activationResent" tone="success" live="polite" class="mt-6">
+      {{ t('auth.activation.resendSuccess') }}
+    </InlineAlert>
 
     <form class="card mt-7" novalidate @submit.prevent="submit">
       <div>
@@ -131,6 +155,24 @@ async function submit(): Promise<void> {
       <RouterLink class="mt-5 inline-block font-bold" :to="{ name: 'forgot-password' }">
         {{ t('auth.forgotPassword') }}
       </RouterLink>
+      <button
+        v-if="submitErrorKey === 'auth.activationRequired'"
+        type="button"
+        class="button-secondary mt-5 w-full sm:w-auto"
+        :disabled="resendingActivation"
+        @click="resendActivation"
+      >
+        {{ t(resendingActivation ? 'auth.activation.resending' : 'auth.activation.resend') }}
+      </button>
+      <p v-if="intent === 'applicant'" class="mt-6 border-t border-slate-200 pt-5">
+        {{ t('auth.noAccount') }}
+        <RouterLink
+          class="font-bold"
+          :to="{ name: 'register', query: typeof route.query.redirect === 'string' ? { redirect: route.query.redirect } : undefined }"
+        >
+          {{ t('auth.createAccount') }}
+        </RouterLink>
+      </p>
     </form>
   </div>
 </template>

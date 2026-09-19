@@ -2,7 +2,7 @@
 
 ## Status and interpretation
 
-This document defines the implemented backend contract for account activation and transactional email. The Django model/API, signed activation token, templates, PostgreSQL outbox, polling retry worker, and backend tests are present. The feature is complete end to end only when the matching Vue registration/activation views and frontend tests are also present.
+This document defines the implemented account-activation and transactional-email feature. The Django model/API, signed activation token, templates, PostgreSQL outbox, polling retry worker, Vue registration/activation views, localized error and resend states, and automated backend/frontend tests are present. A Gmail SMTP smoke test was completed on 2026-09-19 without recording credentials in Git or test output.
 
 “Authenticate through Gmail” means that HoTLinE Doc keeps its own Django account and sends a single-use email-verification link through Gmail SMTP. Gmail is the delivery provider, not the identity provider. Google OAuth / “Sign in with Google” is a separate future decision and is not implied by this requirement.
 
@@ -88,9 +88,9 @@ For Gmail SMTP submission the expected transport is:
 
 Google requires 2-Step Verification before an App Password can be created, and some managed or Advanced Protection accounts do not expose App Passwords. Workspace deployments should prefer the administrator-approved SMTP relay or provider policy when applicable. See Google's official [App Password guidance](https://support.google.com/mail/answer/185833) and [SMTP client settings](https://support.google.com/mail/answer/7104828).
 
-## Acceptance checks for implementation
+## Acceptance checks
 
-The feature is complete only when automated tests and a real-provider smoke test show that:
+The implementation is accepted when automated tests and a real-provider smoke test show that:
 
 1. public registration can create only an `APPLICANT` and cannot mass-assign role/authority/staff fields;
 2. login is denied before verification and allowed after a valid activation exactly once;

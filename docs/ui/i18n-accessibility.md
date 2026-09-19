@@ -6,6 +6,8 @@ The MVP supports Thai (`th`) and English (`en`) through `vue-i18n`. Thai is the 
 
 Core navigation, form labels, validation, status text, and the complete demo flow require both Thai and English UI strings. The MVP does not claim that every piece of legal or master-data content has an authoritative English translation; when a backend translation is unavailable, use the documented fallback and do not invent legal wording.
 
+Registration, activation, resend, unverified-login, and workflow-email templates are part of the core bilingual flow. Registration validation moves focus to the first invalid control; activation and resend outcomes use live status messages; password visibility is a labelled, keyboard-operable button.
+
 ## Language behavior
 
 - Display the selector as text: `ไทย` and `English`.

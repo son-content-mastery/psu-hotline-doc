@@ -51,6 +51,18 @@ const router = createRouter({
       meta: { titleKey: 'routes.login' },
     },
     {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/shared/RegisterView.vue'),
+      meta: { titleKey: 'routes.register' },
+    },
+    {
+      path: '/activate-account',
+      name: 'activate-account',
+      component: () => import('@/views/shared/ActivateAccountView.vue'),
+      meta: { titleKey: 'routes.activateAccount' },
+    },
+    {
       path: '/forgot-password',
       name: 'forgot-password',
       component: () => import('@/views/shared/ForgotPasswordView.vue'),
@@ -160,7 +172,7 @@ router.beforeEach(async (to) => {
   const classification = useClassificationStore()
   await auth.bootstrap()
 
-  if (to.name === 'login' && auth.user) return homeForRole(auth.user.role)
+  if ((to.name === 'login' || to.name === 'register') && auth.user) return homeForRole(auth.user.role)
 
   if (to.name === 'classification-step') {
     const step = Number(to.params.step)

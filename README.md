@@ -53,7 +53,7 @@ The backend container applies migrations and seeds idempotent demo data before s
 
 If a default host port is already in use, set `POSTGRES_PORT`, `BACKEND_PORT`, or `FRONTEND_PORT` in `.env`; internal Compose service ports do not change.
 
-Local password-reset email uses Django's console backend and appears in `docker compose logs backend`. If `FRONTEND_PORT` changes, also set `FRONTEND_BASE_URL` to the browser URL so reset links are correct. Gmail SMTP/App Password setup and the planned activation/notification boundary are documented in `docs/infra/deployment.md` and `docs/security/email-identity-notifications.md`; Gmail is an outbound provider here, not Google OAuth.
+Local password-reset and account-activation email uses the configured Django email backend. With the console backend it appears in `docker compose logs backend`; with Gmail it is delivered by the `email-worker` outbox/retry service. If `FRONTEND_PORT` changes, also set `FRONTEND_BASE_URL` to the browser URL so reset and activation links are correct. Gmail SMTP/App Password setup and the implemented activation/notification boundary are documented in `docs/infra/deployment.md` and `docs/security/email-identity-notifications.md`; Gmail is an outbound provider here, not Google OAuth.
 
 To run migration or seed commands again:
 

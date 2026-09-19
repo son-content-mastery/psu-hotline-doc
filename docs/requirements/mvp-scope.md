@@ -169,7 +169,6 @@ Do not implement these until the complete Must Have flow is working:
 
 - full OCR or advanced AI document understanding;
 - historical case search;
-- workflow email or other notification delivery beyond security-critical password reset in the current Hackathon implementation (the approved follow-up is specified in `docs/security/email-identity-notifications.md`);
 - advanced analytics or officer productivity reports;
 - backup-management UI;
 - discussion/chat;
@@ -189,14 +188,14 @@ Future compatibility means keeping clean interfaces and normalized translationsâ
 - `REQUIRES_LICENSE_REVIEW` deliberately remains unresolved because the source brief does not define a category for low-room/high-guest properties.
 - The demo checklist is not legally authoritative.
 - Local media storage is suitable for a local demo, not a production records system.
-- Authentication uses demo accounts rather than verified citizen identity.
+- Authentication uses service accounts with verified email for new applicants, not verified citizen identity. Seeded staff/demo accounts remain for the Hackathon environment.
 - Central reporting is operational summary data, not a full analytics platform.
 
-## Approved Follow-up: Email Activation and Notifications
+## Implemented Extension: Email Activation and Notifications
 
-The next bounded authentication increment adds applicant registration, email activation through a link delivered by Gmail SMTP, and a small set of transactional workflow notifications. Gmail is an email transport, not Google OAuth or a replacement for Django authentication. Privileged roles remain administrator-managed and every existing owner/authority boundary still applies.
+The bounded authentication extension adds applicant registration, email activation through a link delivered by Gmail SMTP, and a small set of transactional workflow notifications. Gmail is an email transport, not Google OAuth or a replacement for Django authentication. Privileged roles remain administrator-managed and every existing owner/authority boundary still applies.
 
-This follow-up is specified in `docs/security/email-identity-notifications.md`. It must not be represented as implemented until its model/API/UI, redacted delivery handling, and acceptance checks are complete. The existing password-reset email can use the same SMTP configuration immediately.
+The model/API/UI, redacted outbox/retry delivery handling, localized templates, and automated acceptance checks are implemented as specified in `docs/security/email-identity-notifications.md`. Password reset uses the same SMTP configuration and remains limited to active, verified accounts.
 
 ## Scope-change Rule
 
