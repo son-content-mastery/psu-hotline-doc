@@ -37,7 +37,7 @@ A simple table with localized property type and application count. Unknown/unres
 
 ### By LocalAuthority
 
-A simple table with LocalAuthority name and application count. To prevent the overview from becoming a long wall of rows, show the top five ranked authorities by default and provide an explicit **ดูเพิ่มเติม** / **View more** control with an icon and remaining-count text. Expanding reveals the rest; collapsing returns to the preview. The 19 seeded Phuket authorities are master data from the backend; do not hardcode their names or assume every authority has a nonzero row. The API decides whether zero-count authorities are included, and the UI states the convention.
+A simple table with LocalAuthority name and application count. To prevent the overview from becoming a long wall of rows, show the top five ranked authorities by default and place an explicit **ดูเพิ่มเติม** / **View more** control with an icon and remaining-count text immediately after those rows. Expanding reveals the rest in place and keeps the collapse control below the expanded list; collapsing returns to the preview. The 19 seeded Phuket authorities are master data from the backend; do not hardcode their names or assume every authority has a nonzero row. The API decides whether zero-count authorities are included, and the UI states the convention.
 
 ### By current stage
 
@@ -97,7 +97,7 @@ During refresh, retain the prior numbers, mark them as the previous snapshot, an
 
 1. Only an authorized Central Officer can retrieve and view the overview.
 2. The four required counters appear first, in the specified order, using backend aggregates.
-3. Breakdowns by property type, LocalAuthority, and current stage are present as simple readable tables; the LocalAuthority table defaults to a five-row preview with a keyboard-operable view-more control.
+3. Breakdowns by property type, LocalAuthority, and current stage are present as simple readable tables; the LocalAuthority table defaults to a five-row preview with a keyboard-operable view-more control directly below the visible rows.
 4. No complex BI chart, unvalidated geographic map, third-party visualization dependency, or individual decision action is present; the schematic heat grid and its clickable area detail remain aggregate-only and text-readable.
 5. No applicant or individual-application data is exposed.
 6. Raw type/status codes never appear; missing translations use safe localized fallback.

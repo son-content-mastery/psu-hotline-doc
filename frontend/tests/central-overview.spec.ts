@@ -70,6 +70,9 @@ describe('central overview', () => {
     expect(wrapper.get('#authority-heat-title').text()).toContain('19 local authorities')
     expect(wrapper.text()).toContain('Patong Municipality')
     expect(wrapper.findAll('#authority-table tbody tr')).toHaveLength(5)
+    expect(
+      wrapper.get('#authority-table').element.compareDocumentPosition(wrapper.get('#authority-list-toggle').element),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
 
     await wrapper.get('#authority-list-toggle').trigger('click')
     expect(wrapper.findAll('#authority-table tbody tr')).toHaveLength(19)

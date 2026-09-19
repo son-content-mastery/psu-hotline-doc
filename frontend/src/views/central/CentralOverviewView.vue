@@ -372,18 +372,32 @@ onMounted(() => load())
         </section>
 
         <section class="rounded-3xl border border-slate-300 bg-white p-5 sm:p-7">
-          <div class="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 class="text-2xl font-black">{{ t('central.authorityCaption') }}</h2>
-              <p class="mt-1 text-sm text-slate-600">
-                {{ t('central.authorityPreview', { shown: visibleAuthorities.length, total: sortedAuthorities.length }) }}
-              </p>
-            </div>
+          <div>
+            <h2 class="text-2xl font-black">{{ t('central.authorityCaption') }}</h2>
+            <p class="mt-1 text-sm text-slate-600">
+              {{ t('central.authorityPreview', { shown: visibleAuthorities.length, total: sortedAuthorities.length }) }}
+            </p>
+          </div>
+          <table id="authority-table" class="mt-5 w-full border-collapse text-left">
+            <caption class="sr-only">{{ t('central.authorityCaption') }}</caption>
+            <thead>
+              <tr class="border-b-2 border-slate-300">
+                <th scope="col" class="py-3 pr-3">{{ t('central.category') }}</th>
+                <th scope="col" class="py-3 text-right">{{ t('central.count') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in visibleAuthorities" :key="item.id" class="border-b border-slate-200">
+                <th scope="row" class="py-3 pr-3 font-semibold">{{ item.name }}</th>
+                <td class="py-3 text-right font-bold">{{ formatNumber(item.count, locale) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-if="remainingAuthorityCount" class="mt-5 flex justify-center">
             <button
-              v-if="remainingAuthorityCount"
               id="authority-list-toggle"
               type="button"
-              class="button-secondary"
+              class="button-secondary w-full justify-center sm:w-auto"
               :aria-expanded="showAllAuthorities"
               aria-controls="authority-table"
               @click="showAllAuthorities = !showAllAuthorities"
@@ -401,21 +415,6 @@ onMounted(() => load())
               </svg>
             </button>
           </div>
-          <table id="authority-table" class="mt-5 w-full border-collapse text-left">
-            <caption class="sr-only">{{ t('central.authorityCaption') }}</caption>
-            <thead>
-              <tr class="border-b-2 border-slate-300">
-                <th scope="col" class="py-3 pr-3">{{ t('central.category') }}</th>
-                <th scope="col" class="py-3 text-right">{{ t('central.count') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in visibleAuthorities" :key="item.id" class="border-b border-slate-200">
-                <th scope="row" class="py-3 pr-3 font-semibold">{{ item.name }}</th>
-                <td class="py-3 text-right font-bold">{{ formatNumber(item.count, locale) }}</td>
-              </tr>
-            </tbody>
-          </table>
           <p class="mt-4 text-sm text-slate-600">{{ t('central.zeroConvention') }}</p>
         </section>
 
