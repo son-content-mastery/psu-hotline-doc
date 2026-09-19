@@ -1,12 +1,15 @@
-import os
 import io
+import json
+import os
 from datetime import date, timedelta
 from decimal import Decimal
+from pathlib import Path
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from pypdf import PdfWriter
 
@@ -28,6 +31,9 @@ from apps.core.models import (
     PropertyType,
     PropertyTypeDocumentRequirement,
     PropertyTypeTranslation,
+    ThaiDistrict,
+    ThaiProvince,
+    ThaiSubdistrict,
     User,
 )
 from apps.core.services import capture_requirements
@@ -265,6 +271,61 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, *args, **options):
         password = os.getenv("DEMO_PASSWORD", "DemoPass123!")
+        location_path = Path(__file__).resolve().parents[2] / "data" / "phuket_administrative_areas.json"
+        location_data = json.loads(location_path.read_text(encoding="utf-8"))
+        records = location_data.get("records", [])
+        if location_data.get("province_code") != "83" or len(records) != 17:
+            raise CommandError("The pinned Phuket administrative-area snapshot is incomplete.")
+
+        for record in records:
+            if not (
+                record["district_code"].startswith(record["province_code"])
+                and record["subdistrict_code"].startswith(record["district_code"])
+                and len(record["postal_code"]) == 5
+                and record["postal_code"].isdigit()
+            ):
+                raise CommandError(f"Invalid administrative-area record: {record['subdistrict_code']}")
+            province, _ = ThaiProvince.objects.update_or_create(
+                code=record["province_code"],
+                defaults={
+                    "name_th": record["province_name_th"],
+                    "name_en": record["province_name_en"],
+                    "is_active": True,
+                },
+            )
+            district, _ = ThaiDistrict.objects.update_or_create(
+                code=record["district_code"],
+                defaults={
+                    "province": province,
+                    "name_th": record["district_name_th"],
+                    "name_en": record["district_name_en"],
+                    "is_active": True,
+                },
+            )
+            ThaiSubdistrict.objects.update_or_create(
+                code=record["subdistrict_code"],
+                defaults={
+                    "district": district,
+                    "name_th": record["subdistrict_name_th"],
+                    "name_en": record["subdistrict_name_en"],
+                    "postal_code": record["postal_code"],
+                    "is_active": True,
+                },
+            )
+
+        for property_record in Property.objects.filter(administrative_subdistrict__isnull=True):
+            matches = ThaiSubdistrict.objects.filter(
+                Q(name_th__iexact=property_record.subdistrict) | Q(name_en__iexact=property_record.subdistrict),
+                district__is_active=True,
+                is_active=True,
+            ).filter(
+                Q(district__name_th__iexact=property_record.district)
+                | Q(district__name_en__iexact=property_record.district)
+            )
+            if matches.count() == 1:
+                property_record.administrative_subdistrict = matches.first()
+                property_record.save(update_fields=["administrative_subdistrict"])
+
         authorities = {}
         for index, (code, name) in enumerate(AUTHORITIES, start=1):
             authority, _ = LocalAuthority.objects.update_or_create(
@@ -466,6 +527,7 @@ class Command(BaseCommand):
 
         applicant = users["applicant@example.test"]
         patong = authorities["PATONG_MUNICIPALITY"]
+        patong_subdistrict = ThaiSubdistrict.objects.get(code="830202")
         samples = [
             ("ที่พักตัวอย่างฉบับร่าง", "DRAFT", "TYPE_1", 20, 40, False),
             ("ที่พักตัวอย่างรอตรวจ", "SUBMITTED", "TYPE_1", 18, 36, False),
@@ -478,6 +540,7 @@ class Command(BaseCommand):
                 name=name,
                 defaults={
                     "local_authority": patong,
+                    "administrative_subdistrict": patong_subdistrict,
                     "property_type": property_types[type_code],
                     "address_line": f"{90 + index} ถนนตัวอย่าง",
                     "subdistrict": "ป่าตอง",

@@ -61,6 +61,8 @@ For this MVP, an unresolved application may preserve its classification and cont
 ## 4. Property and Authority Assignment
 
 - A property belongs to one applicant and one responsible `LocalAuthority` for the MVP.
+- Phuket administrative addresses use stable province, district, and subdistrict codes imported from a pinned open-source snapshot. Applicants select a subdistrict code; the backend derives and snapshots the Thai province/district/subdistrict names and postal code instead of trusting independently typed values.
+- Administrative areas and `LocalAuthority` jurisdictions are different master-data concepts. The system must not infer the responsible authority from a subdistrict unless a separately reviewed jurisdiction mapping is introduced.
 - An application is routed using the property's responsible authority as recorded at creation/submission.
 - Applicant ownership and responsible authority are server-assigned from authenticated/contextual records, never accepted as unrestricted client authority.
 - Changing authority on an already submitted application is an administrative correction that must be audited; it is not a normal applicant edit.

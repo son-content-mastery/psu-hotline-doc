@@ -18,6 +18,7 @@ urlpatterns = [
     ),
     path("classification/questions/", views.ClassificationQuestionsView.as_view(), name="classification-questions"),
     path("classification/evaluate/", views.ClassificationEvaluateView.as_view(), name="classification-evaluate"),
+    path("locations/phuket/", views.PhuketLocationCatalogView.as_view(), name="phuket-locations"),
     path("local-authorities/", views.LocalAuthorityListView.as_view(), name="local-authorities"),
     path("property-types/", views.PropertyTypeListView.as_view(), name="property-types"),
     path(

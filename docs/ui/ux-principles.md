@@ -120,6 +120,8 @@ Requirements:
 - provide a retry action for network failures without duplicating a completed request;
 - warn before leaving only when unsaved work would actually be lost.
 
+For Phuket property addresses, keep the street/building line as free text, fix the province to Phuket, offer cascading district and subdistrict selects from the backend catalog, and display the derived postal code read-only. Keep the responsible local-authority selector separate and explain that it controls routing.
+
 Do not blame the user. Prefer “กรอกจำนวนห้องเป็นตัวเลขจำนวนเต็ม” over “Invalid input.”
 
 ## Status communication

@@ -23,6 +23,12 @@ An officer stores `local_authority_id`, not copied authority name, address, and 
 
 The application deliberately retains its responsible-authority FK even though the property also has one. This is a documented routing snapshot: changing the current property authority must not silently move an already submitted case.
 
+### Administrative areas are normalized reference data
+
+`ThaiProvince`, `ThaiDistrict`, and `ThaiSubdistrict` form a code-based hierarchy imported from the pinned Thailand Geography JSON snapshot. `Property.administrative_subdistrict` references the selected leaf. The existing province, district, subdistrict, and postal-code strings are deliberate application-address snapshots derived by Django when the leaf changes; clients cannot submit those four values independently.
+
+The bilingual names are source attributes from the imported public dataset rather than application-authored translations. `LocalAuthority` remains separate because an administrative subdistrict does not safely identify a local-government jurisdiction.
+
 ### PropertyType is separate from Property and Application
 
 Stable type identity and translated display content belong to `PropertyType` and `PropertyTypeTranslation`. Property/application rows reference the type rather than repeating names, fees, or document lists. Outcomes such as `NOT_HOTEL`, `OUT_OF_SCOPE`, and `REQUIRES_LICENSE_REVIEW` may have no property-type FK because inventing a type would be false data.

@@ -25,6 +25,9 @@ from .models import (
     PropertyType,
     PropertyTypeDocumentRequirement,
     PropertyTypeTranslation,
+    ThaiDistrict,
+    ThaiProvince,
+    ThaiSubdistrict,
     User,
 )
 
@@ -169,6 +172,34 @@ class LocalAuthorityAdmin(admin.ModelAdmin):
     list_display = ("code", "official_name", "contact_phone", "is_active")
     search_fields = ("code", "official_name")
     list_filter = ("is_active",)
+
+
+class ReadOnlyReferenceAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ThaiProvince)
+class ThaiProvinceAdmin(ReadOnlyReferenceAdmin):
+    list_display = ("code", "name_th", "name_en", "is_active")
+
+
+@admin.register(ThaiDistrict)
+class ThaiDistrictAdmin(ReadOnlyReferenceAdmin):
+    list_display = ("code", "name_th", "name_en", "province", "is_active")
+    list_filter = ("province", "is_active")
+
+
+@admin.register(ThaiSubdistrict)
+class ThaiSubdistrictAdmin(ReadOnlyReferenceAdmin):
+    list_display = ("code", "name_th", "name_en", "district", "postal_code", "is_active")
+    list_filter = ("district", "is_active")
 
 
 @admin.register(Property)

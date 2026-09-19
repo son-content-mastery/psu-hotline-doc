@@ -363,6 +363,29 @@ For `6` rooms and `24` guests, the outcome is `NOT_HOTEL`, `requires_license` is
 
 ## Public master data
 
+### `GET /api/v1/locations/phuket/`
+
+**Purpose:** Return the pinned, database-backed Phuket province/district/subdistrict hierarchy used by applicant address controls. The response is localized with `Accept-Language`; codes remain stable.
+
+**Permission:** Public, read-only.
+
+```json
+{
+  "province": {"code": "83", "name": "ภูเก็ต"},
+  "districts": [
+    {
+      "code": "8302",
+      "name": "กะทู้",
+      "subdistricts": [
+        {"code": "830202", "name": "ป่าตอง", "postal_code": "83150"}
+      ]
+    }
+  ]
+}
+```
+
+The catalog is imported from the pinned Thailand Geography JSON snapshot documented with the backend data file. Clients submit only `subdistrict_code`; Django derives the province, district, subdistrict, and postal-code snapshots. This administrative hierarchy does not determine `LocalAuthority` routing.
+
 ### `GET /api/v1/local-authorities/`
 
 **Purpose:** List the 19 Phuket authorities used to assign an application and show external-document guidance.
@@ -499,10 +522,7 @@ For `6` rooms and `24` guests, the outcome is `NOT_HOTEL`, `requires_license` is
   "property": {
     "name": "ที่พักตัวอย่างอันดามัน",
     "address_line": "99 ถนนตัวอย่าง",
-    "subdistrict": "ป่าตอง",
-    "district": "กะทู้",
-    "province": "ภูเก็ต",
-    "postal_code": "83150",
+    "subdistrict_code": "830202",
     "local_authority_id": 4
   },
   "classification_answers": {
@@ -540,7 +560,7 @@ For `6` rooms and `24` guests, the outcome is `NOT_HOTEL`, `requires_license` is
 }
 ```
 
-**Important errors:** `401 AUTHENTICATION_REQUIRED`; `403 PERMISSION_DENIED` for other roles; `400 VALIDATION_ERROR` for property/answer validation or an unknown/inactive authority; `409 NO_ACTIVE_CLASSIFICATION_RULE`; `409 OUT_OF_SCOPE` when classification is outside this MVP. A `REQUIRES_LICENSE_REVIEW` draft may be saved but cannot be submitted until an authorized workflow resolves its property type.
+**Important errors:** `401 AUTHENTICATION_REQUIRED`; `403 PERMISSION_DENIED` for other roles; `400 VALIDATION_ERROR` for property/answer validation, an unknown/inactive administrative subdistrict, or an unknown/inactive authority; `409 NO_ACTIVE_CLASSIFICATION_RULE`; `409 OUT_OF_SCOPE` when classification is outside this MVP. Province, district, subdistrict name, and postal code are derived server-side and cannot be overridden by the client. A `REQUIRES_LICENSE_REVIEW` draft may be saved but cannot be submitted until an authorized workflow resolves its property type.
 
 ### `GET /api/v1/applications/`
 

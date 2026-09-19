@@ -35,6 +35,9 @@ from apps.core.models import (
     PropertyType,
     PropertyTypeDocumentRequirement,
     PropertyTypeTranslation,
+    ThaiDistrict,
+    ThaiProvince,
+    ThaiSubdistrict,
     User,
 )
 from apps.core.services import (
@@ -230,10 +233,7 @@ def test_application_create_re_evaluates_and_rejects_tampering(seeded, api_clien
         "property": {
             "name": "New fictional stay",
             "address_line": "22 Demo Road",
-            "subdistrict": "Patong",
-            "district": "Kathu",
-            "province": "Phuket",
-            "postal_code": "83150",
+            "subdistrict_code": "830202",
             "local_authority_id": seeded["patong"].id,
         },
         "classification_answers": {"rooms": 20, "guests": 40, "has_restaurant": False},
@@ -248,7 +248,69 @@ def test_application_create_re_evaluates_and_rejects_tampering(seeded, api_clien
     assert response.data["classification"]["outcome"] == "TYPE_1"
     application = Application.objects.get(pk=response.data["id"])
     assert application.property.owner == seeded["applicant"]
+    assert application.property.administrative_subdistrict.code == "830202"
+    assert application.property.subdistrict == "ป่าตอง"
+    assert application.property.district == "กะทู้"
+    assert application.property.province == "ภูเก็ต"
+    assert application.property.postal_code == "83150"
     assert application.requirements.count() > 0
+
+
+def test_phuket_location_catalog_is_database_driven_and_localized(seeded, api_client):
+    response = api_client.get("/api/v1/locations/phuket/")
+    assert response.status_code == 200
+    assert response.data["province"] == {"code": "83", "name": "ภูเก็ต"}
+    assert len(response.data["districts"]) == 3
+    assert sum(len(item["subdistricts"]) for item in response.data["districts"]) == 17
+    patong = next(
+        subdistrict
+        for district in response.data["districts"]
+        for subdistrict in district["subdistricts"]
+        if subdistrict["code"] == "830202"
+    )
+    assert patong == {"code": "830202", "name": "ป่าตอง", "postal_code": "83150"}
+
+    english = api_client.get("/api/v1/locations/phuket/", HTTP_ACCEPT_LANGUAGE="en")
+    assert english.status_code == 200
+    assert english.data["province"] == {"code": "83", "name": "Phuket"}
+    assert next(item for item in english.data["districts"] if item["code"] == "8302")["name"] == "Kathu"
+
+
+def test_application_location_code_is_validated_and_refreshes_snapshots(seeded, api_client):
+    api_client.force_authenticate(seeded["applicant"])
+    payload = {
+        "property": {
+            "name": "Location validation",
+            "address_line": "33 Demo Road",
+            "subdistrict_code": "999999",
+            "local_authority_id": seeded["patong"].id,
+        },
+        "classification_answers": {"rooms": 20, "guests": 40, "has_restaurant": False},
+    }
+    invalid = api_client.post("/api/v1/applications/", payload, format="json")
+    assert invalid.status_code == 400
+    assert "subdistrict_code" in invalid.data["error"]["fields"]["property"]
+
+    payload["property"]["subdistrict_code"] = "830202"
+    created = api_client.post("/api/v1/applications/", payload, format="json")
+    assert created.status_code == 201
+    updated = api_client.patch(
+        f"/api/v1/applications/{created.data['id']}/",
+        {"property": {"subdistrict_code": "830201"}},
+        format="json",
+    )
+    assert updated.status_code == 200
+    expected_location = {
+        "province_code": "83",
+        "district_code": "8302",
+        "subdistrict_code": "830201",
+        "subdistrict": "กะทู้",
+        "district": "กะทู้",
+        "province": "ภูเก็ต",
+        "postal_code": "83120",
+    }
+    for key, value in expected_location.items():
+        assert updated.data["property"][key] == value
 
 
 def test_supplied_checklists_are_grouped_into_database_driven_steps(seeded, api_client):
@@ -1424,6 +1486,9 @@ def test_seed_demo_is_idempotent(seeded, monkeypatch):
     monkeypatch.setenv("DEMO_PASSWORD", "DemoPass123!")
     before = {
         "authorities": LocalAuthority.objects.count(),
+        "provinces": ThaiProvince.objects.count(),
+        "districts": ThaiDistrict.objects.count(),
+        "subdistricts": ThaiSubdistrict.objects.count(),
         "users": User.objects.count(),
         "types": PropertyType.objects.count(),
         "rules": ClassificationRule.objects.count(),
@@ -1438,6 +1503,9 @@ def test_seed_demo_is_idempotent(seeded, monkeypatch):
     call_command("seed_demo", verbosity=0)
     after = {
         "authorities": LocalAuthority.objects.count(),
+        "provinces": ThaiProvince.objects.count(),
+        "districts": ThaiDistrict.objects.count(),
+        "subdistricts": ThaiSubdistrict.objects.count(),
         "users": User.objects.count(),
         "types": PropertyType.objects.count(),
         "rules": ClassificationRule.objects.count(),
@@ -1451,6 +1519,9 @@ def test_seed_demo_is_idempotent(seeded, monkeypatch):
     }
     assert before == after
     assert after["authorities"] == 19
+    assert after["provinces"] == 1
+    assert after["districts"] == 3
+    assert after["subdistricts"] == 17
 
 
 def test_seed_demo_reconciles_a_replaced_demo_document(seeded, monkeypatch):

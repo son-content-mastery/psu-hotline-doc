@@ -4,7 +4,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .models import DocumentReview, User
+from .models import DocumentReview, ThaiSubdistrict, User
 
 
 class StrictSerializer(serializers.Serializer):
@@ -106,10 +106,16 @@ class ClassificationInputSerializer(StrictSerializer):
 class PropertyInputSerializer(StrictSerializer):
     name = serializers.CharField(max_length=255)
     address_line = serializers.CharField(max_length=255)
-    subdistrict = serializers.CharField(max_length=120)
-    district = serializers.CharField(max_length=120)
-    province = serializers.CharField(max_length=120)
-    postal_code = serializers.RegexField(r"^[0-9]{5}$")
+    subdistrict_code = serializers.SlugRelatedField(
+        slug_field="code",
+        source="administrative_subdistrict",
+        queryset=ThaiSubdistrict.objects.filter(
+            is_active=True,
+            district__is_active=True,
+            district__province__is_active=True,
+            district__province__code="83",
+        ).select_related("district__province"),
+    )
     local_authority_id = serializers.IntegerField(min_value=1)
 
 
@@ -121,10 +127,17 @@ class ApplicationCreateSerializer(StrictSerializer):
 class PropertyPatchSerializer(StrictSerializer):
     name = serializers.CharField(max_length=255, required=False)
     address_line = serializers.CharField(max_length=255, required=False)
-    subdistrict = serializers.CharField(max_length=120, required=False)
-    district = serializers.CharField(max_length=120, required=False)
-    province = serializers.CharField(max_length=120, required=False)
-    postal_code = serializers.RegexField(r"^[0-9]{5}$", required=False)
+    subdistrict_code = serializers.SlugRelatedField(
+        slug_field="code",
+        source="administrative_subdistrict",
+        queryset=ThaiSubdistrict.objects.filter(
+            is_active=True,
+            district__is_active=True,
+            district__province__is_active=True,
+            district__province__code="83",
+        ).select_related("district__province"),
+        required=False,
+    )
     local_authority_id = serializers.IntegerField(min_value=1, required=False)
 
 
@@ -174,6 +187,23 @@ class AuthorityOutputSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     code = serializers.CharField()
     name = serializers.CharField()
+
+
+class ThaiSubdistrictOutputSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    name = serializers.CharField()
+    postal_code = serializers.CharField()
+
+
+class ThaiDistrictOutputSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    name = serializers.CharField()
+    subdistricts = ThaiSubdistrictOutputSerializer(many=True)
+
+
+class ThaiLocationCatalogOutputSerializer(serializers.Serializer):
+    province = serializers.DictField()
+    districts = ThaiDistrictOutputSerializer(many=True)
 
 
 class PropertyTypeOutputSerializer(serializers.Serializer):
@@ -244,6 +274,9 @@ class OfficerDocumentOutputSerializer(OfficerDocumentVersionOutputSerializer):
 class ApplicationPropertyOutputSerializer(serializers.Serializer):
     name = serializers.CharField()
     address_line = serializers.CharField()
+    province_code = serializers.CharField(allow_null=True)
+    district_code = serializers.CharField(allow_null=True)
+    subdistrict_code = serializers.CharField(allow_null=True)
     subdistrict = serializers.CharField()
     district = serializers.CharField()
     province = serializers.CharField()

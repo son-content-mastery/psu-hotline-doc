@@ -23,6 +23,48 @@ class LocalAuthority(models.Model):
         return f"{self.code} — {self.official_name}"
 
 
+class ThaiProvince(models.Model):
+    code = models.CharField(max_length=2, unique=True)
+    name_th = models.CharField(max_length=120)
+    name_en = models.CharField(max_length=120)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["code"]
+
+    def __str__(self):
+        return f"{self.code} — {self.name_th}"
+
+
+class ThaiDistrict(models.Model):
+    code = models.CharField(max_length=4, unique=True)
+    province = models.ForeignKey(ThaiProvince, on_delete=models.PROTECT, related_name="districts")
+    name_th = models.CharField(max_length=120)
+    name_en = models.CharField(max_length=120)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["code"]
+
+    def __str__(self):
+        return f"{self.code} — {self.name_th}"
+
+
+class ThaiSubdistrict(models.Model):
+    code = models.CharField(max_length=6, unique=True)
+    district = models.ForeignKey(ThaiDistrict, on_delete=models.PROTECT, related_name="subdistricts")
+    name_th = models.CharField(max_length=120)
+    name_en = models.CharField(max_length=120)
+    postal_code = models.CharField(max_length=5)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["code"]
+
+    def __str__(self):
+        return f"{self.code} — {self.name_th}"
+
+
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -346,6 +388,13 @@ class FeeSchedule(models.Model):
 class Property(models.Model):
     owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name="properties")
     local_authority = models.ForeignKey(LocalAuthority, on_delete=models.PROTECT, related_name="properties")
+    administrative_subdistrict = models.ForeignKey(
+        ThaiSubdistrict,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="properties",
+    )
     property_type = models.ForeignKey(
         PropertyType,
         null=True,

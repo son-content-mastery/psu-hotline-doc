@@ -1,0 +1,28 @@
+{
+  "source": {
+    "name": "Thailand Geography JSON",
+    "repository": "https://github.com/thailand-geography-data/thailand-geography-json",
+    "commit": "b8b3fb91c7df1129ff5b43cb46f7fcffadd2156b",
+    "license": "MIT"
+  },
+  "province_code": "83",
+  "records": [
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8301","district_name_th":"เมืองภูเก็ต","district_name_en":"Mueang Phuket","subdistrict_code":"830101","subdistrict_name_th":"ตลาดใหญ่","subdistrict_name_en":"Talat Yai","postal_code":"83000"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8301","district_name_th":"เมืองภูเก็ต","district_name_en":"Mueang Phuket","subdistrict_code":"830102","subdistrict_name_th":"ตลาดเหนือ","subdistrict_name_en":"Talat Nuea","postal_code":"83000"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8301","district_name_th":"เมืองภูเก็ต","district_name_en":"Mueang Phuket","subdistrict_code":"830103","subdistrict_name_th":"เกาะแก้ว","subdistrict_name_en":"Ko Kaeo","postal_code":"83000"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8301","district_name_th":"เมืองภูเก็ต","district_name_en":"Mueang Phuket","subdistrict_code":"830104","subdistrict_name_th":"รัษฎา","subdistrict_name_en":"Ratsada","postal_code":"83000"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8301","district_name_th":"เมืองภูเก็ต","district_name_en":"Mueang Phuket","subdistrict_code":"830105","subdistrict_name_th":"วิชิต","subdistrict_name_en":"Wichit","postal_code":"83000"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8301","district_name_th":"เมืองภูเก็ต","district_name_en":"Mueang Phuket","subdistrict_code":"830106","subdistrict_name_th":"ฉลอง","subdistrict_name_en":"Chalong","postal_code":"83130"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8301","district_name_th":"เมืองภูเก็ต","district_name_en":"Mueang Phuket","subdistrict_code":"830107","subdistrict_name_th":"ราไวย์","subdistrict_name_en":"Rawai","postal_code":"83130"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8301","district_name_th":"เมืองภูเก็ต","district_name_en":"Mueang Phuket","subdistrict_code":"830108","subdistrict_name_th":"กะรน","subdistrict_name_en":"Karon","postal_code":"83100"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8302","district_name_th":"กะทู้","district_name_en":"Kathu","subdistrict_code":"830201","subdistrict_name_th":"กะทู้","subdistrict_name_en":"Kathu","postal_code":"83120"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8302","district_name_th":"กะทู้","district_name_en":"Kathu","subdistrict_code":"830202","subdistrict_name_th":"ป่าตอง","subdistrict_name_en":"Patong","postal_code":"83150"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8302","district_name_th":"กะทู้","district_name_en":"Kathu","subdistrict_code":"830203","subdistrict_name_th":"กมลา","subdistrict_name_en":"Kamala","postal_code":"83150"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8303","district_name_th":"ถลาง","district_name_en":"Thalang","subdistrict_code":"830301","subdistrict_name_th":"เทพกระษัตรี","subdistrict_name_en":"Thep Krasattri","postal_code":"83110"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8303","district_name_th":"ถลาง","district_name_en":"Thalang","subdistrict_code":"830302","subdistrict_name_th":"ศรีสุนทร","subdistrict_name_en":"Si Sunthon","postal_code":"83110"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8303","district_name_th":"ถลาง","district_name_en":"Thalang","subdistrict_code":"830303","subdistrict_name_th":"เชิงทะเล","subdistrict_name_en":"Choeng Thale","postal_code":"83110"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8303","district_name_th":"ถลาง","district_name_en":"Thalang","subdistrict_code":"830304","subdistrict_name_th":"ป่าคลอก","subdistrict_name_en":"Pa Khlok","postal_code":"83110"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8303","district_name_th":"ถลาง","district_name_en":"Thalang","subdistrict_code":"830305","subdistrict_name_th":"ไม้ขาว","subdistrict_name_en":"Mai Khao","postal_code":"83110"},
+    {"province_code":"83","province_name_th":"ภูเก็ต","province_name_en":"Phuket","district_code":"8303","district_name_th":"ถลาง","district_name_en":"Thalang","subdistrict_code":"830306","subdistrict_name_th":"สาคู","subdistrict_name_en":"Sakhu","postal_code":"83110"}
+  ]
+}

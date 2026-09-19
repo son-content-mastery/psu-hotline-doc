@@ -39,6 +39,7 @@ from .models import (
     Property,
     PropertyType,
     PropertyTypeDocumentRequirement,
+    ThaiProvince,
     User,
 )
 from .permissions import IsApplicant, IsCentralOfficer, IsLocalOfficer, IsVerifiedUser
@@ -67,6 +68,7 @@ from .serializers import (
     RegistrationSerializer,
     RequirementsOutputSerializer,
     SubmitSerializer,
+    ThaiLocationCatalogOutputSerializer,
     UploadSerializer,
 )
 from .throttles import AccountEmailRateThrottle
@@ -181,6 +183,7 @@ def application_summary(application, locale):
 
 def application_detail(application, locale):
     state = requirement_state(application)
+    administrative_subdistrict = application.property.administrative_subdistrict
     return {
         "id": application.id,
         "reference_number": application.reference_number,
@@ -192,6 +195,11 @@ def application_detail(application, locale):
             "id": application.property.id,
             "name": application.property.name,
             "address_line": application.property.address_line,
+            "province_code": (
+                administrative_subdistrict.district.province.code if administrative_subdistrict else None
+            ),
+            "district_code": administrative_subdistrict.district.code if administrative_subdistrict else None,
+            "subdistrict_code": administrative_subdistrict.code if administrative_subdistrict else None,
             "subdistrict": application.property.subdistrict,
             "district": application.property.district,
             "province": application.property.province,
@@ -402,7 +410,11 @@ def paginated_response(request, queryset, mapper):
 
 def owned_applications(user):
     return Application.objects.filter(property__owner=user).select_related(
-        "property", "property__local_authority", "responsible_authority", "confirmed_property_type"
+        "property",
+        "property__local_authority",
+        "property__administrative_subdistrict__district__province",
+        "responsible_authority",
+        "confirmed_property_type",
     )
 
 
@@ -420,7 +432,11 @@ def officer_applications(user):
             Application.Status.REJECTED,
         },
     ).select_related(
-        "property", "property__local_authority", "responsible_authority", "confirmed_property_type"
+        "property",
+        "property__local_authority",
+        "property__administrative_subdistrict__district__province",
+        "responsible_authority",
+        "confirmed_property_type",
     )
 
 
@@ -686,6 +702,47 @@ class LocalAuthorityListView(ContractAPIView):
         )
 
 
+class PhuketLocationCatalogView(ContractAPIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(responses=ThaiLocationCatalogOutputSerializer)
+    def get(self, request):
+        locale = requested_locale(request)
+        province = get_object_or_404(
+            ThaiProvince.objects.filter(is_active=True).prefetch_related(
+                "districts__subdistricts"
+            ),
+            code="83",
+        )
+
+        def localized_name(item):
+            return item.name_en if locale == "en" else item.name_th
+
+        districts = []
+        for district in province.districts.filter(is_active=True):
+            subdistricts = [
+                {
+                    "code": subdistrict.code,
+                    "name": localized_name(subdistrict),
+                    "postal_code": subdistrict.postal_code,
+                }
+                for subdistrict in district.subdistricts.filter(is_active=True)
+            ]
+            districts.append(
+                {
+                    "code": district.code,
+                    "name": localized_name(district),
+                    "subdistricts": subdistricts,
+                }
+            )
+        return Response(
+            {
+                "province": {"code": province.code, "name": localized_name(province)},
+                "districts": districts,
+            }
+        )
+
+
 class PropertyTypeListView(ContractAPIView):
     permission_classes = [AllowAny]
 
@@ -793,6 +850,9 @@ class ApplicationListCreateView(ContractAPIView):
         property_values = serializer.validated_data["property"]
         answers = serializer.validated_data["classification_answers"]
         authority = get_object_or_404(LocalAuthority, pk=property_values.pop("local_authority_id"), is_active=True)
+        administrative_subdistrict = property_values.pop("administrative_subdistrict")
+        district = administrative_subdistrict.district
+        province = district.province
         result = evaluate_classification(
             rooms=answers["rooms"], max_guests=answers["guests"], has_restaurant=answers["has_restaurant"]
         )
@@ -802,6 +862,11 @@ class ApplicationListCreateView(ContractAPIView):
             owner=request.user,
             local_authority=authority,
             property_type=result.property_type,
+            administrative_subdistrict=administrative_subdistrict,
+            subdistrict=administrative_subdistrict.name_th,
+            district=district.name_th,
+            province=province.name_th,
+            postal_code=administrative_subdistrict.postal_code,
             rooms=answers["rooms"],
             max_guests=answers["guests"],
             has_restaurant=answers["has_restaurant"],
@@ -862,6 +927,15 @@ class ApplicationDetailView(ContractAPIView):
             )
             application.property.local_authority = authority
             application.responsible_authority = authority
+        if "administrative_subdistrict" in property_values:
+            administrative_subdistrict = property_values.pop("administrative_subdistrict")
+            district = administrative_subdistrict.district
+            province = district.province
+            application.property.administrative_subdistrict = administrative_subdistrict
+            application.property.subdistrict = administrative_subdistrict.name_th
+            application.property.district = district.name_th
+            application.property.province = province.name_th
+            application.property.postal_code = administrative_subdistrict.postal_code
         for key, value in property_values.items():
             setattr(application.property, key, value)
         if "classification_answers" in values:
@@ -1120,6 +1194,7 @@ class OfficerApplicationDetailView(ContractAPIView):
     def get(self, request, pk):
         application = get_object_or_404(officer_applications(request.user), pk=pk)
         locale = requested_locale(request)
+        administrative_subdistrict = application.property.administrative_subdistrict
         required_type_ids = set(application.requirements.filter(is_required=True).values_list("document_type_id", flat=True))
         documents = list(application.documents.select_related("document_type", "uploaded_by").prefetch_related(
             "document_type__translations", "reviews__reviewer"
@@ -1167,6 +1242,15 @@ class OfficerApplicationDetailView(ContractAPIView):
                 "property": {
                     "name": application.property.name,
                     "address_line": application.property.address_line,
+                    "province_code": (
+                        administrative_subdistrict.district.province.code
+                        if administrative_subdistrict
+                        else None
+                    ),
+                    "district_code": (
+                        administrative_subdistrict.district.code if administrative_subdistrict else None
+                    ),
+                    "subdistrict_code": administrative_subdistrict.code if administrative_subdistrict else None,
                     "subdistrict": application.property.subdistrict,
                     "district": application.property.district,
                     "province": application.property.province,
