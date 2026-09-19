@@ -118,7 +118,7 @@ function contactHref(item: RequirementItem): string | undefined {
               </dd>
             </template>
             <template v-if="item.guidance.approximate_processing_days != null">
-              <dt>{{ t('documents.guidance.instructions') }}</dt>
+              <dt>{{ t('documents.guidance.processingLabel') }}</dt>
               <dd>
                 {{
                   t('documents.guidance.processing', {

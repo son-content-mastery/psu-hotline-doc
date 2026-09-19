@@ -729,9 +729,9 @@ For `6` rooms and `24` guests, the outcome is `NOT_HOTEL`, `requires_license` is
             "contact_phone": "076-000-004",
             "contact_email": "demo-building@example.test",
             "source_url": "https://example.test/demo-building-office",
-            "instructions": "ติดต่อหน่วยงานที่รับผิดชอบเพื่อยืนยันขั้นตอนและเอกสารประกอบ",
-            "required_supporting_items": [],
-            "approximate_processing_days": null,
+            "instructions": "ติดต่อหน่วยงานอาคารตัวอย่างพร้อมแบบอาคาร และยืนยันขั้นตอนจริงกับหน่วยงานผู้รับผิดชอบ",
+            "required_supporting_items": ["เอกสารสิทธิหรือหนังสือยินยอมใช้ที่ดิน", "แบบแปลนอาคารสำหรับประกอบคำขอ"],
+            "approximate_processing_days": 15,
             "translation_fallback": false
           }
         }

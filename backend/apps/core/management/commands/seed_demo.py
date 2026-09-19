@@ -117,6 +117,100 @@ DOCUMENTS = [
 ]
 
 
+# Fictional values for demonstrating database-driven external guidance. These
+# are deliberately not presented as official service levels or legal advice.
+EXTERNAL_DOCUMENT_GUIDANCE = {
+    "COMPANY_REGISTRATION": {
+        "days": 2,
+        "th": (
+            "ยื่นคำขอผ่านหน่วยงานทะเบียนธุรกิจตัวอย่าง และตรวจสอบข้อกำหนดจริงกับหน่วยงานก่อนดำเนินการ",
+            ["เลขทะเบียนนิติบุคคล", "บัตรประชาชนหรือหนังสือมอบอำนาจของผู้ขอ"],
+        ),
+        "en": (
+            "Request the document from the demo business registry and confirm the actual requirements before proceeding.",
+            ["Company registration number", "Requester identity document or authorization letter"],
+        ),
+    },
+    "BUILDING_PERMIT_O1": {
+        "days": 15,
+        "th": (
+            "ติดต่อหน่วยงานอาคารตัวอย่างพร้อมแบบอาคาร และยืนยันขั้นตอนจริงกับหน่วยงานผู้รับผิดชอบ",
+            ["เอกสารสิทธิหรือหนังสือยินยอมใช้ที่ดิน", "แบบแปลนอาคารสำหรับประกอบคำขอ"],
+        ),
+        "en": (
+            "Contact the demo building office with the building plans and confirm the actual process with the responsible authority.",
+            ["Land-right evidence or consent", "Building plans supporting the request"],
+        ),
+    },
+    "BUILDING_MODIFICATION_OR_USE_CERT": {
+        "days": 20,
+        "th": (
+            "ขอคำแนะนำจากหน่วยงานอาคารตัวอย่างก่อนยื่นเรื่องดัดแปลงหรือเปลี่ยนการใช้อาคาร",
+            ["ใบอนุญาตหรือข้อมูลอาคารเดิม", "แบบแปลนส่วนที่ดัดแปลงหรือเปลี่ยนการใช้"],
+        ),
+        "en": (
+            "Ask the demo building office for guidance before requesting a modification or change-of-use document.",
+            ["Existing building permit or building record", "Plans for the proposed modification or use change"],
+        ),
+    },
+    "BUILDING_PERMIT_OR_CERTIFICATE": {
+        "days": 15,
+        "th": (
+            "ติดต่อหน่วยงานอาคารตัวอย่างเพื่อระบุเอกสารอาคารที่เหมาะกับสถานที่พักนี้",
+            ["ข้อมูลที่ตั้งและเลขที่อาคาร", "เอกสารสิทธิหรือหลักฐานการใช้สถานที่"],
+        ),
+        "en": (
+            "Contact the demo building office to identify the appropriate building record for this accommodation.",
+            ["Building address and identification details", "Land-right or premises-use evidence"],
+        ),
+    },
+    "ACCOMMODATION_HOUSE_REGISTRATION": {
+        "days": 7,
+        "th": (
+            "ยื่นคำขอที่สำนักทะเบียนตัวอย่าง และตรวจสอบหลักฐานฉบับจริงที่หน่วยงานกำหนด",
+            ["เอกสารระบุตัวเจ้าของหรือผู้รับมอบอำนาจ", "หลักฐานเลขที่บ้านหรือเอกสารสิทธิที่เกี่ยวข้อง"],
+        ),
+        "en": (
+            "Request the record from the demo district registry and confirm which originals the office requires.",
+            ["Owner or authorized representative identity document", "House-number or related land-right evidence"],
+        ),
+    },
+    "IMPACT_REPORT": {
+        "days": 30,
+        "th": (
+            "สอบถามหน่วยงานท้องถิ่นตัวอย่างเพื่อกำหนดขอบเขตรายงานก่อนจัดทำและยื่นเอกสาร",
+            ["ข้อมูลโครงการและการใช้ประโยชน์อาคาร", "แผนที่ตั้งและแนวทางลดผลกระทบเบื้องต้น"],
+        ),
+        "en": (
+            "Ask the demo local authority to confirm the report scope before preparing and submitting it.",
+            ["Project and building-use summary", "Location map and preliminary mitigation information"],
+        ),
+    },
+    "LIABILITY_INSURANCE": {
+        "days": 3,
+        "th": (
+            "แจ้งรายละเอียดสถานที่พักและความคุ้มครองที่ต้องการแก่ผู้ให้บริการประกันภัยตัวอย่าง",
+            ["รายละเอียดสถานที่พักและจำนวนห้อง", "ข้อมูลผู้เอาประกันภัยและวงเงินคุ้มครองที่ต้องการ"],
+        ),
+        "en": (
+            "Provide the accommodation and requested coverage details to the demo insurance provider.",
+            ["Accommodation details and room count", "Insured-party details and requested coverage amount"],
+        ),
+    },
+    "MANAGER_MEDICAL_CERTIFICATE": {
+        "days": 1,
+        "th": (
+            "นัดหมายกับสถานพยาบาลตัวอย่างและสอบถามรายการตรวจที่หน่วยงานรับคำขอกำหนด",
+            ["บัตรประชาชนหรือเอกสารระบุตัวผู้จัดการ", "ข้อมูลวัตถุประสงค์ของใบรับรองแพทย์"],
+        ),
+        "en": (
+            "Book an appointment with the demo healthcare provider and confirm the required examination scope.",
+            ["Manager identity document", "Purpose required on the medical certificate"],
+        ),
+    },
+}
+
+
 HOTEL_REQUIREMENT_CODES = [
     "HOTEL_APPLICATION_RR1", "APPLICANT_HOUSE_REGISTRATION", "APPLICANT_ID_CARD",
     "COMPANY_REGISTRATION", "COMPANY_MOA_AND_REPRESENTATIVE", "BUILDING_PERMIT_O1",
@@ -278,12 +372,13 @@ class Command(BaseCommand):
         DocumentType.objects.exclude(code__in=active_document_codes).update(is_active=False)
         document_steps = {item[0]: item[3] for item in DOCUMENTS}
         for code, category, agency_code, step_code, allows_multiple, th_name, en_name in DOCUMENTS:
+            external_guidance = EXTERNAL_DOCUMENT_GUIDANCE.get(code)
             document_type, _ = DocumentType.objects.update_or_create(
                 code=code,
                 defaults={
                     "category": category,
                     "issuing_agency": agencies.get(agency_code),
-                    "approximate_processing_days": None,
+                    "approximate_processing_days": external_guidance["days"] if external_guidance else None,
                     "allows_multiple_files": allows_multiple,
                     "is_active": True,
                 },
@@ -292,6 +387,7 @@ class Command(BaseCommand):
             document_type.save()
             document_types[code] = document_type
             for language_code, name in (("th", th_name), ("en", en_name)):
+                guidance_translation = external_guidance.get(language_code) if external_guidance else None
                 DocumentTypeTranslation.objects.update_or_create(
                     document_type=document_type,
                     language_code=language_code,
@@ -302,12 +398,12 @@ class Command(BaseCommand):
                             if language_code == "th"
                             else "Item from the supplied project checklist; confirm the official requirement before real use"
                         ),
-                        "instructions": (
+                        "instructions": guidance_translation[0] if guidance_translation else (
                             ("อัปโหลดภาพที่ชัดเจนได้สูงสุด 10 ไฟล์ หรือรวมเป็น PDF หนึ่งไฟล์" if allows_multiple else "อัปโหลดไฟล์ที่อ่านได้ชัดเจนหนึ่งไฟล์")
                             if language_code == "th"
                             else ("Upload up to 10 clear images, or combine them into one PDF" if allows_multiple else "Upload one clear, readable file")
                         ),
-                        "supporting_items": "",
+                        "supporting_items": "\n".join(guidance_translation[1]) if guidance_translation else "",
                     },
                 )
 

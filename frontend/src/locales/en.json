@@ -161,6 +161,7 @@
       "authority": "Responsible local authority",
       "contact": "Contact",
       "supporting": "Items needed when requesting this document",
+      "processingLabel": "Processing time",
       "processing": "Approximate processing time: {days} days",
       "instructions": "Instructions",
       "unavailable": "Information unavailable; contact the responsible agency."

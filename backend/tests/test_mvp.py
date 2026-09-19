@@ -769,8 +769,8 @@ def test_database_driven_checklist_and_external_guidance(seeded, api_client):
     assert external[0]["description"]
     assert external[0]["instructions"]
     assert external[0]["guidance"]["issuing_agency"]["code"].startswith("DEMO_")
-    assert external[0]["guidance"]["required_supporting_items"] == []
-    assert external[0]["guidance"]["approximate_processing_days"] is None
+    assert all(item["guidance"]["required_supporting_items"] for item in external)
+    assert all(item["guidance"]["approximate_processing_days"] > 0 for item in external)
     assert external[0]["guidance"]["instructions"]
     assert external[0]["guidance"]["source_url"].startswith("https://example.test/")
 

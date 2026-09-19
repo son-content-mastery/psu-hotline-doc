@@ -201,7 +201,7 @@ If frontend tests are not present, record that fact and run the production build
 
 **Given** Type 1, Type 2, and non-hotel notification have normalized document requirements, including external-agency documents and database-owned preparation steps  
 **When** applications request their requirements  
-**Then** hotel pathways expose 28 items and non-hotel notification exposes 17; each receives only active requirements for its server-derived type, grouped into steps and operator-prepared/external sections. External guidance returns only fields available in master data—missing supporting items or processing time remain absent rather than fabricated. Editing master data changes the API result without changing Vue code, and the legal-validation disclaimer remains visible.
+**Then** hotel pathways expose 28 items and non-hotel notification exposes 17; each receives only active requirements for its server-derived type, grouped into steps and operator-prepared/external sections. Seeded external documents expose explicitly fictional supporting items and processing times from master data; any field absent from master data remains absent rather than being fabricated by the API or client. Editing master data changes the API result without changing Vue code, and the legal-validation disclaimer remains visible.
 
 ### TC-23 — Audit fields are server-controlled and immutable
 
