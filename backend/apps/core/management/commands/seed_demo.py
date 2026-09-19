@@ -32,6 +32,7 @@ from apps.core.models import (
     PropertyType,
     PropertyTypeDocumentRequirement,
     PropertyTypeTranslation,
+    ProviderDirectoryEntry,
     ThaiDistrict,
     ThaiProvince,
     ThaiSubdistrict,
@@ -813,5 +814,36 @@ class Command(BaseCommand):
                 application.save()
                 application.requirements.all().delete()
                 capture_requirements(application)
+
+        for provider in (
+            {
+                "name": "ผู้ช่วยเอกสารสมมติ อันดามัน (Demo)",
+                "services": ["APPLICATION_SUPPORT", "LEGAL_ADVICE"],
+                "price_min": Decimal("2500.00"),
+                "price_max": Decimal("8000.00"),
+                "price_note_th": "ราคาสมมติต่อคำขอ ขึ้นกับขอบเขตงาน",
+                "price_note_en": "Fictional per-application range; scope affects price.",
+                "contact_url": "https://provider-one.example.test",
+            },
+            {
+                "name": "ภูเก็ตแบบอาคารและความปลอดภัย (Demo)",
+                "services": ["TECHNICAL_DRAWING", "FIRE_SAFETY"],
+                "price_min": Decimal("5000.00"),
+                "price_max": Decimal("25000.00"),
+                "price_note_th": "ราคาสมมติ ต้องประเมินหน้างานก่อน",
+                "price_note_en": "Fictional range; a site assessment is required.",
+                "contact_url": "https://provider-two.example.test",
+            },
+        ):
+            ProviderDirectoryEntry.objects.update_or_create(
+                name=provider["name"],
+                defaults={
+                    **{key: value for key, value in provider.items() if key != "name"},
+                    "source_status": ProviderDirectoryEntry.SourceStatus.DEMO_ONLY,
+                    "source_checked_at": date(2026, 9, 20),
+                    "source_url": "",
+                    "is_active": True,
+                },
+            )
 
         self.stdout.write(self.style.SUCCESS("Demo data is ready (fictional data only)."))

@@ -5,6 +5,7 @@ from . import views
 
 urlpatterns = [
     path("system/status/", views.SystemStatusView.as_view(), name="system-status"),
+    path("public/providers/", views.ProviderDirectoryView.as_view(), name="provider-directory"),
     path("auth/me/", views.AuthMeView.as_view(), name="auth-me"),
     path("auth/register/", views.RegisterView.as_view(), name="auth-register"),
     path("auth/activation/resend/", views.ActivationResendView.as_view(), name="auth-activation-resend"),

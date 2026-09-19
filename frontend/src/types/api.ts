@@ -32,6 +32,19 @@ export interface SystemStatus {
   checked_at: string
 }
 
+export type ProviderServiceCode = 'APPLICATION_SUPPORT' | 'TECHNICAL_DRAWING' | 'FIRE_SAFETY' | 'LEGAL_ADVICE'
+
+export interface ProviderDirectoryEntry {
+  id: number
+  name: string
+  services: ProviderServiceCode[]
+  price: { min: string | null; max: string | null; currency: string; note: string }
+  contact_url: string | null
+  source_url: string | null
+  source_status: 'DEMO_ONLY' | 'SELF_DECLARED' | 'PUBLIC_SOURCE'
+  source_checked_at: string | null
+}
+
 export interface Paginated<T> {
   count: number
   next: string | null

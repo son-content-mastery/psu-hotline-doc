@@ -147,6 +147,13 @@ For externally issued items, show database-managed issuing agency, applicable re
 - Completed/draft applications expose the existing conversation read-only; cross-owner, cross-authority, and central access is denied.
 - Message audit events record creation without duplicating message content in the audit reason.
 
+### C2 — Provider Directory (implemented optional foundation)
+
+- Public users may filter active listings by an allowlisted service category and compare optional reference price ranges.
+- Every listing carries a source status and optional source-check date/link. The page states that HoTLinE Doc does not endorse, license, guarantee, or validate provider quality or price.
+- Super Admin maintains listings; validation rejects unsupported service codes, duplicate service codes, negative prices, and inverted price ranges.
+- Seed data is fictional, visibly marked `DEMO_ONLY`, and uses reserved `.test` contact domains. Real listings require an approved source and governance policy.
+
 ### S6 — Pseudonymous Workload (implemented optional capability)
 
 - Count document reviews and terminal application decisions per contributing local officer for the current calendar month.

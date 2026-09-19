@@ -51,6 +51,7 @@ from .models import (
     Property,
     PropertyType,
     PropertyTypeDocumentRequirement,
+    ProviderDirectoryEntry,
     ThaiProvince,
     User,
 )
@@ -143,6 +144,47 @@ class SystemStatusView(ContractAPIView):
                     "ends_at": notice.ends_at,
                 },
                 "checked_at": now,
+            }
+        )
+
+
+class ProviderDirectoryView(ContractAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        queryset = ProviderDirectoryEntry.objects.filter(is_active=True)
+        service = request.query_params.get("service", "").strip().upper()
+        if service:
+            if service not in ProviderDirectoryEntry.ServiceCode.values:
+                raise DomainError("INVALID_PROVIDER_SERVICE", "Unknown provider service code.")
+            queryset = queryset.filter(services__contains=[service])
+        locale = requested_locale(request)
+        return Response(
+            {
+                "disclaimer": (
+                    "Listings are informational only and are not endorsed, licensed, or guaranteed by HoTLinE Doc. Verify qualifications, scope, and price directly before hiring."
+                    if locale == "en"
+                    else "รายชื่อนี้เป็นข้อมูลประกอบเท่านั้น HoTLinE Doc ไม่ได้รับรอง ใบอนุญาต คุณภาพ หรือราคา กรุณาตรวจสอบคุณสมบัติ ขอบเขตงาน และราคากับผู้ให้บริการก่อนว่าจ้าง"
+                ),
+                "results": [
+                    {
+                        "id": item.id,
+                        "name": item.name,
+                        "services": item.services,
+                        "price": {
+                            "min": str(item.price_min) if item.price_min is not None else None,
+                            "max": str(item.price_max) if item.price_max is not None else None,
+                            "currency": item.currency,
+                            "note": item.price_note_en if locale == "en" else item.price_note_th,
+                        },
+                        "contact_url": item.contact_url or None,
+                        "source_url": item.source_url or None,
+                        "source_status": item.source_status,
+                        "source_checked_at": item.source_checked_at,
+                    }
+                    for item in queryset
+                ],
             }
         )
 

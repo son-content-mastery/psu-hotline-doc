@@ -60,6 +60,14 @@ Unexpected server errors use `INTERNAL_ERROR` without exposing stack traces, sec
 
 **Success:** `{ "maintenance": null, "checked_at": "..." }` or a `maintenance` object containing only localized `title`, localized `message`, `starts_at`, and `ends_at`.
 
+### `GET /api/v1/public/providers/`
+
+**Purpose:** Return active optional private-provider listings with a mandatory localized non-endorsement disclaimer. Optional `?service=` accepts only `APPLICATION_SUPPORT`, `TECHNICAL_DRAWING`, `FIRE_SAFETY`, or `LEGAL_ADVICE`.
+
+**Permission:** Public.
+
+**Success:** `disclaimer` plus `results` containing name, service codes, nullable reference price range/currency/localized note, optional contact/source URL, source status, and source-check date. A listing is not proof of licensing, qualification, quality, availability, or price.
+
 The MVP uses Django's server-side session authentication. It does **not** put access tokens or passwords in `localStorage` or `sessionStorage`.
 
 - Login creates a Django session and sets an `HttpOnly`, `SameSite=Lax` session cookie.

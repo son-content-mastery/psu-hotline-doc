@@ -65,7 +65,8 @@
       "description": "View the province-wide application overview.",
       "cta": "Central officer sign in"
     },
-    "restartWarning": "Starting again will clear your unfinished classification. Continue?"
+    "restartWarning": "Starting again will clear your unfinished classification. Continue?",
+    "providersLink": "View the optional private service provider directory"
   },
   "classification": {
     "pageTitle": "Accommodation classification",
@@ -778,6 +779,29 @@
       "LOCAL_OFFICER": "Local officer"
     }
   },
+  "providers": {
+    "eyebrow": "Optional reference service",
+    "title": "Private service provider directory",
+    "intro": "Compare listed service categories and reference price ranges before contacting a provider directly.",
+    "filterLabel": "Service needed",
+    "allServices": "All services",
+    "applyFilter": "Apply filter",
+    "priceRange": "Reference range: {min} – {max}",
+    "contact": "Open provider contact page",
+    "error": "The provider directory could not be loaded.",
+    "empty": "No provider listing matches this service.",
+    "services": {
+      "APPLICATION_SUPPORT": "Application preparation",
+      "TECHNICAL_DRAWING": "Technical drawing",
+      "FIRE_SAFETY": "Fire-safety documents",
+      "LEGAL_ADVICE": "Legal advice"
+    },
+    "source": {
+      "DEMO_ONLY": "Fictional demo listing—not a real provider",
+      "SELF_DECLARED": "Provider self-declared information",
+      "PUBLIC_SOURCE": "Information from a published public source"
+    }
+  },
   "verification": {
     "eyebrow": "Public service",
     "title": "Verify a licence",
@@ -844,6 +868,7 @@
     "officerReview": "Officer application review",
     "central": "Province overview",
     "systemStatus": "System status",
+    "providers": "Provider directory",
     "license": "Printable licence",
     "verifyLicense": "Verify licence",
     "forbidden": "Access unavailable",

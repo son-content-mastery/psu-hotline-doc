@@ -29,6 +29,7 @@ from .models import (
     PropertyType,
     PropertyTypeDocumentRequirement,
     PropertyTypeTranslation,
+    ProviderDirectoryEntry,
     ThaiDistrict,
     ThaiProvince,
     ThaiSubdistrict,
@@ -182,6 +183,13 @@ class MaintenanceNoticeAdmin(admin.ModelAdmin):
     list_display = ("title_th", "starts_at", "ends_at", "is_active")
     list_filter = ("is_active",)
     search_fields = ("title_th", "title_en", "message_th", "message_en")
+
+
+@admin.register(ProviderDirectoryEntry)
+class ProviderDirectoryEntryAdmin(admin.ModelAdmin):
+    list_display = ("name", "source_status", "source_checked_at", "is_active", "updated_at")
+    list_filter = ("source_status", "is_active")
+    search_fields = ("name", "contact_url", "source_url")
 
 
 @admin.register(PropertyTypeDocumentRequirement)

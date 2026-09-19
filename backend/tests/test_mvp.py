@@ -43,6 +43,7 @@ from apps.core.models import (
     PropertyType,
     PropertyTypeDocumentRequirement,
     PropertyTypeTranslation,
+    ProviderDirectoryEntry,
     ThaiDistrict,
     ThaiProvince,
     ThaiSubdistrict,
@@ -1224,6 +1225,28 @@ def test_application_discussion_is_owner_authority_scoped_and_immutable(seeded, 
     with pytest.raises(ValidationError):
         stored.save()
     assert AuditLog.objects.filter(action="DISCUSSION_MESSAGE_CREATED").count() == 2
+
+
+def test_provider_directory_is_public_filtered_and_explicitly_unendorsed(seeded, api_client):
+    response = api_client.get("/api/v1/public/providers/", HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 200
+    assert len(response.data["results"]) == 2
+    assert "not endorsed" in response.data["disclaimer"]
+    assert all(item["source_status"] == "DEMO_ONLY" for item in response.data["results"])
+    assert all("example.test" in item["contact_url"] for item in response.data["results"])
+
+    filtered = api_client.get("/api/v1/public/providers/?service=FIRE_SAFETY")
+    assert filtered.status_code == 200
+    assert len(filtered.data["results"]) == 1
+    assert "FIRE_SAFETY" in filtered.data["results"][0]["services"]
+    invalid = api_client.get("/api/v1/public/providers/?service=UNKNOWN")
+    assert invalid.status_code == 409
+    assert invalid.data["error"]["code"] == "INVALID_PROVIDER_SERVICE"
+
+    entry = ProviderDirectoryEntry.objects.first()
+    entry.services = ["UNSUPPORTED"]
+    with pytest.raises(ValidationError):
+        entry.save()
 
 
 def test_database_driven_checklist_and_external_guidance(seeded, api_client):

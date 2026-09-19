@@ -72,5 +72,8 @@ async function startApplicantFlow(): Promise<void> {
         </section>
       </li>
     </ol>
+    <p class="mt-7 text-center">
+      <RouterLink class="font-bold" :to="{ name: 'provider-directory' }">{{ t('home.providersLink') }}</RouterLink>
+    </p>
   </div>
 </template>

@@ -15,6 +15,7 @@ describe('public role gateway', () => {
         { path: '/', name: 'home', component: HomeView },
         { path: '/classification/:step', name: 'classification-step', component: HomeView },
         { path: '/login', name: 'login', component: HomeView },
+        { path: '/providers', name: 'provider-directory', component: HomeView },
       ],
     })
     await router.push('/')

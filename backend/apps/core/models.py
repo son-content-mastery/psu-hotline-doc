@@ -739,6 +739,61 @@ class MaintenanceNotice(models.Model):
         return self.title_en
 
 
+class ProviderDirectoryEntry(models.Model):
+    class ServiceCode(models.TextChoices):
+        APPLICATION_SUPPORT = "APPLICATION_SUPPORT", "Application preparation support"
+        TECHNICAL_DRAWING = "TECHNICAL_DRAWING", "Technical drawing"
+        FIRE_SAFETY = "FIRE_SAFETY", "Fire-safety documentation"
+        LEGAL_ADVICE = "LEGAL_ADVICE", "Legal advice"
+
+    class SourceStatus(models.TextChoices):
+        DEMO_ONLY = "DEMO_ONLY", "Fictional demo entry"
+        SELF_DECLARED = "SELF_DECLARED", "Provider self-declared"
+        PUBLIC_SOURCE = "PUBLIC_SOURCE", "Published public source"
+
+    name = models.CharField(max_length=255)
+    services = models.JSONField(default=list)
+    price_min = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    price_max = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=3, default="THB")
+    price_note_th = models.CharField(max_length=255, blank=True)
+    price_note_en = models.CharField(max_length=255, blank=True)
+    contact_url = models.URLField(blank=True)
+    source_url = models.URLField(blank=True)
+    source_status = models.CharField(max_length=20, choices=SourceStatus.choices)
+    source_checked_at = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+        indexes = [models.Index(fields=["is_active", "name"], name="provider_active_name_idx")]
+
+    def clean(self):
+        super().clean()
+        allowed_services = set(self.ServiceCode.values)
+        if not isinstance(self.services, list) or not self.services or any(
+            item not in allowed_services for item in self.services
+        ):
+            raise ValidationError({"services": "Use a non-empty list of supported service codes."})
+        if len(self.services) != len(set(self.services)):
+            raise ValidationError({"services": "Service codes must be unique."})
+        if self.price_min is not None and self.price_min < 0:
+            raise ValidationError({"price_min": "Price cannot be negative."})
+        if self.price_max is not None and self.price_max < 0:
+            raise ValidationError({"price_max": "Price cannot be negative."})
+        if self.price_min is not None and self.price_max is not None and self.price_max < self.price_min:
+            raise ValidationError({"price_max": "Maximum price cannot be below minimum price."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class License(models.Model):
     class ArtifactKind(models.TextChoices):
         HOTEL_LICENSE = "HOTEL_LICENSE", "Hotel license"

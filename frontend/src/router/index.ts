@@ -87,6 +87,12 @@ const router = createRouter({
       meta: { titleKey: 'routes.systemStatus' },
     },
     {
+      path: '/providers',
+      name: 'provider-directory',
+      component: () => import('@/views/public/ProviderDirectoryView.vue'),
+      meta: { titleKey: 'routes.providers' },
+    },
+    {
       path: '/applications',
       name: 'application-list',
       component: () => import('@/views/applicant/ApplicationListView.vue'),

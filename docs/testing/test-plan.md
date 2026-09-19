@@ -355,6 +355,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** both see the same server-timestamped sequence; cross-authority access is `404`, central access is `403`, completed/draft posting is rejected, messages cannot be edited/deleted, and the UI sends trimmed text without attachment or identity controls.
 
+### TC-39 — Provider directory never implies endorsement
+
+**Layer:** Backend validation/filter/public API tests plus public directory component test.
+
+**Given** fictional demo listings with allowlisted services and reference price ranges
+
+**When** a public user opens or filters the directory
+
+**Then** the API/UI show source status and a non-endorsement disclaimer, use only `.test` seeded contacts, return matching services, reject unknown service codes, and prevent invalid or inverted prices from being saved.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:
