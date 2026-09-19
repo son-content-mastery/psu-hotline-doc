@@ -106,6 +106,13 @@ For externally issued items, show database-managed issuing agency, applicable re
 - Offer a simple print-friendly HTML page. Sophisticated PDF generation is not required.
 - Approval of `NON_HOTEL_NOTIFICATION` creates a printable notification acknowledgement without a fee or expiry instead of representing it as a hotel license.
 
+### C3 — Public Verification (implemented optional capability)
+
+- Every issued decision artifact receives an immutable, random public verification token that is separate from its sequential licence number.
+- The printable artifact includes a QR code linking to a no-login verification page.
+- The public response is deliberately minimal: artifact status/number, property display name and type, issuing authority, issue date, and expiry date. It excludes applicant identity, application reference, exact address, fee, documents, and review history.
+- Hotel licences report `VALID` or `EXPIRED` from the server date; non-hotel acknowledgements report `RECORDED` because they have no licence expiry.
+
 ### M11 — Minimal Central Overview
 
 - Show total, waiting review, waiting for applicant revision, and approved counts.
@@ -173,7 +180,6 @@ Do not implement these until the complete Must Have flow is working:
 - backup-management UI;
 - discussion/chat;
 - service-provider marketplace;
-- public QR license verification;
 - real ThaiID integration;
 - cloud/object storage;
 - sophisticated PDF generation;

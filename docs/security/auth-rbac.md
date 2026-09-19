@@ -222,6 +222,10 @@ UNIQUE(provider_code, provider_subject)
 
 An authentication adapter/backend owns provider redirects, callback verification, claim mapping, and account linking. Views and domain services continue to use `request.user`; they do not depend on ThaiID SDK objects or claims.
 
+## Public Licence Verification
+
+Public verification is the only anonymous route that reads an issued decision artifact. Lookup uses a random UUID token, never the sequential licence number. The response is allow-listed to artifact status/number, property display name/type, issuing authority, and issue/expiry dates. It must not expose applicant identity, application reference, exact address, fee, uploaded files, reasons, or audit history. The QR endpoint encodes only the frontend verification URL and returns a generated SVG; it never accepts arbitrary QR content.
+
 ### Expected protocol safeguards
 
 The final choice depends on official ThaiID documentation and approval available at integration time. If the supported flow is OpenID Connect/OAuth 2.0, use Authorization Code flow with PKCE and:

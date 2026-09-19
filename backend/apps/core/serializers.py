@@ -212,6 +212,18 @@ class PropertyTypeOutputSerializer(serializers.Serializer):
     issues_license = serializers.BooleanField()
 
 
+class PublicLicenseVerificationOutputSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["VALID", "EXPIRED", "RECORDED"])
+    artifact_kind = serializers.ChoiceField(choices=["HOTEL_LICENSE", "NOTIFICATION_ACKNOWLEDGEMENT"])
+    license_number = serializers.CharField()
+    property = serializers.DictField()
+    property_type = PropertyTypeOutputSerializer()
+    issuing_authority = AuthorityOutputSerializer()
+    issued_at = serializers.DateTimeField()
+    expires_at = serializers.DateField(allow_null=True)
+    checked_at = serializers.DateTimeField()
+
+
 class DocumentTypeOutputSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     code = serializers.CharField()

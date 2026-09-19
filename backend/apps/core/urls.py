@@ -20,6 +20,16 @@ urlpatterns = [
     path("classification/evaluate/", views.ClassificationEvaluateView.as_view(), name="classification-evaluate"),
     path("locations/phuket/", views.PhuketLocationCatalogView.as_view(), name="phuket-locations"),
     path("local-authorities/", views.LocalAuthorityListView.as_view(), name="local-authorities"),
+    path(
+        "public/licenses/<uuid:token>/",
+        views.PublicLicenseVerificationView.as_view(),
+        name="public-license-verification",
+    ),
+    path(
+        "public/licenses/<uuid:token>/qr/",
+        views.PublicLicenseQrView.as_view(),
+        name="public-license-verification-qr",
+    ),
     path("property-types/", views.PropertyTypeListView.as_view(), name="property-types"),
     path(
         "property-types/<int:pk>/requirements/",

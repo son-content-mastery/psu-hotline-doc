@@ -75,6 +75,12 @@ const router = createRouter({
       meta: { titleKey: 'routes.resetPassword' },
     },
     {
+      path: '/verify/:token([0-9a-fA-F-]{36})',
+      name: 'public-license-verification',
+      component: () => import('@/views/public/PublicLicenseVerificationView.vue'),
+      meta: { titleKey: 'routes.verifyLicense' },
+    },
+    {
       path: '/applications',
       name: 'application-list',
       component: () => import('@/views/applicant/ApplicationListView.vue'),

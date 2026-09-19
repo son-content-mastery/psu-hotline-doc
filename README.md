@@ -16,6 +16,7 @@ This repository contains a two-day Hackathon MVP intended for local demonstratio
 - Advisory image-quality preflight for resolution, exposure, contrast, and possible blur; PDF structure is accepted with an explicit visual-check limitation.
 - Local Thai/English OCR checks recognizable document families and reports match, possible mismatch, inconclusive, unavailable, or not-applicable results without storing extracted text.
 - Applicant review, submission, correction, resubmission, status history, and print-friendly licence or notification acknowledgement.
+- Opaque-token public licence verification with a printable QR code; the public view omits applicant identity, application reference, full address, and fee.
 - Authority-scoped officer queue and document review. Approval needs no reason; correction and rejection require a reason visible to the applicant.
 - Read-only central overview with all 19 configured Phuket authorities, five-row expandable ranking, accessible heat grid, and aggregate detail dialogs.
 - Transactional activation, workflow, and configurable licence-expiry reminder email through a PostgreSQL outbox with bounded retry. Gmail SMTP is supported as delivery transport, not Google OAuth.

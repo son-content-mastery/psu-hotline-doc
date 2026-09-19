@@ -285,6 +285,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** it reports match, possible mismatch, not applicable, inconclusive, or unavailable as appropriate; stores/returns only controlled family metadata; never stores raw OCR text; never invokes a shell; respects page/timeout bounds; and does not change upload, readiness, or officer authorization rules.
 
+### TC-32 — Public licence verification is useful without exposing the application
+
+**Layer:** Backend API/privacy tests plus public and printable frontend component tests.
+
+**Given** a valid or expired hotel licence, a non-hotel acknowledgement, and an unknown random token
+
+**When** an anonymous visitor opens the verification URL or scans the printed QR code
+
+**Then** the known record reports `VALID`, `EXPIRED`, or `RECORDED`; the unknown token returns `404`; the QR contains the opaque-token frontend URL; and neither response nor public UI includes applicant identity, application reference, exact address, fee, documents, or review history.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:
@@ -298,8 +308,9 @@ Run this in a fresh seeded environment after automated tests:
 7. Mark one document for revision with a reason and request application revision.
 8. Return as the applicant; confirm one actionable revision is obvious, then upload a new version.
 9. Resubmit, review the new current version as the officer, approve all required documents, and approve the application.
-10. Return as the applicant; confirm approved tracking and open the print-friendly license/reference.
-11. Log in as `central@example.test`; confirm summary totals and breakdowns reflect the transition, with no decision controls or individual personal data.
+10. Return as the applicant; confirm approved tracking, open the print-friendly license/reference, and open its QR verification URL in a signed-out browser.
+11. Confirm the public result shows only the allow-listed record details and the expected valid/recorded status.
+12. Log in as `central@example.test`; confirm summary totals and breakdowns reflect the transition, with no decision controls or individual personal data.
 
 Capture failures and exact commands/output in the final verification notes. Do not mark this acceptance case complete based only on unit tests.
 
@@ -307,7 +318,7 @@ Capture failures and exact commands/output in the final verification notes. Do n
 
 The Hackathon MVP is ready to demo only when:
 
-- TC-01 through TC-28 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
+- TC-01 through TC-32 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
 - the full end-to-end demo acceptance succeeds on a clean seeded database;
 - Django system checks, backend tests, and the frontend production build pass;
 - permission failures have been exercised with at least two applicants and two different local authorities;

@@ -4,5 +4,6 @@ drf-spectacular>=0.27,<0.29
 Pillow>=10,<12
 pypdf>=4,<6
 psycopg[binary]>=3.1,<4
+qrcode>=8,<9
 pytest>=8,<9
 pytest-django>=4.8,<5

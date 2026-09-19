@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -602,6 +604,7 @@ class License(models.Model):
         NOTIFICATION_ACKNOWLEDGEMENT = "NOTIFICATION_ACKNOWLEDGEMENT", "Notification acknowledgement"
 
     application = models.OneToOneField(Application, on_delete=models.PROTECT, related_name="license")
+    verification_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     artifact_kind = models.CharField(
         max_length=40,
         choices=ArtifactKind.choices,

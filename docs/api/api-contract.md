@@ -1316,6 +1316,10 @@ For a non-hotel notification, `artifact_kind` is `NOTIFICATION_ACKNOWLEDGEMENT`,
     "amount_snapshot": "10000.00",
     "currency": "THB",
     "fee_schedule_id": 11
+  },
+  "public_verification": {
+    "verification_url": "http://localhost:5173/verify/11111111-1111-4111-8111-111111111111",
+    "qr_code_url": "/api/v1/public/licenses/11111111-1111-4111-8111-111111111111/qr/"
   }
 }
 ```
@@ -1323,6 +1327,22 @@ For a non-hotel notification, `artifact_kind` is `NOTIFICATION_ACKNOWLEDGEMENT`,
 **Important errors:** `404 NOT_FOUND` for missing/out-of-scope application; `409 LICENSE_NOT_AVAILABLE` if the application is not approved or license creation has not completed. The endpoint returns data, not a sophisticated generated PDF; the Vue route renders accessible print-friendly HTML/CSS.
 
 For `NOTIFICATION_ACKNOWLEDGEMENT`, `expires_at` and `fee` are null and the printable UI uses acknowledgement wording rather than licence wording.
+
+### `GET /api/v1/public/licenses/{verification_token}/`
+
+**Purpose:** Let any visitor verify a printed decision artifact from an opaque QR/link without signing in.
+
+**Permission:** Public, anonymous-throttled. Lookup is by immutable random UUID, not by the sequential licence number.
+
+**Success:** Returns only `status` (`VALID`, `EXPIRED`, or `RECORDED`), `artifact_kind`, `license_number`, property display name/type, issuing authority, issue/expiry dates, and `checked_at`. It never returns applicant identity, application reference, exact address, fee, document metadata, reasons, or audit history.
+
+**Important errors:** `404 NOT_FOUND` for an unknown or malformed token.
+
+### `GET /api/v1/public/licenses/{verification_token}/qr/`
+
+**Purpose:** Return the server-generated SVG QR code placed on the printable artifact. The encoded value is exactly `{FRONTEND_BASE_URL}/verify/{verification_token}`; clients cannot supply arbitrary QR content.
+
+**Permission:** Public, anonymous-throttled. **Response content type:** `image/svg+xml`. **Important errors:** `404 NOT_FOUND`.
 
 ## Contract invariants
 

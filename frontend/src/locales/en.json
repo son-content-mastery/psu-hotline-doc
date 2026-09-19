@@ -651,7 +651,29 @@
     "loading": "Loading the printable record…",
     "unavailable": "The printable record is unavailable or you do not have access to it.",
     "backToTracking": "Back to application tracking",
-    "print": "Print this record"
+    "print": "Print this record",
+    "publicVerification": "Verify this record online",
+    "publicVerificationNote": "The QR code exposes only the details needed for verification, not the applicant or full address.",
+    "qrAlt": "QR code for licence verification"
+  },
+  "verification": {
+    "eyebrow": "Public service",
+    "title": "Verify a licence",
+    "intro": "Check the status of a record issued by HoTLinE Doc without signing in.",
+    "loading": "Checking the record…",
+    "notFound": "No record was found for this link. Check the QR code or link and try again.",
+    "reference": "Record number",
+    "property": "Accommodation",
+    "propertyType": "Accommodation type",
+    "authority": "Issuing authority",
+    "issuedAt": "Issued",
+    "expiresAt": "Expires",
+    "privacyNote": "To protect personal data, this page does not show the applicant, application number, full address, or fee.",
+    "status": {
+      "valid": "Valid",
+      "expired": "Expired",
+      "recorded": "Notification recorded"
+    }
   },
   "statuses": {
     "application": {
@@ -699,6 +721,7 @@
     "officerReview": "Officer application review",
     "central": "Province overview",
     "license": "Printable licence",
+    "verifyLicense": "Verify licence",
     "forbidden": "Access unavailable",
     "notFound": "Page not found"
   },

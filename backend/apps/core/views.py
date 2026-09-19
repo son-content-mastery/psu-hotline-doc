@@ -1,3 +1,4 @@
+import io
 from collections import Counter, defaultdict
 from datetime import timedelta
 
@@ -8,7 +9,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Count, Max, Q
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
@@ -24,6 +25,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+import qrcode
+from qrcode.image.svg import SvgPathImage
 
 from .exceptions import DomainError
 from .models import (
@@ -61,6 +64,7 @@ from .serializers import (
     PasswordResetCompleteOutputSerializer,
     PasswordResetAcceptedOutputSerializer,
     PasswordResetRequestSerializer,
+    PublicLicenseVerificationOutputSerializer,
     PaginatedApplicantApplicationOutputSerializer,
     HistoryOutputSerializer,
     OfficerApplicationDetailOutputSerializer,
@@ -132,6 +136,36 @@ def property_type_data(property_type, locale):
         "description": translation["description"],
         "issues_license": property_type.issues_license,
         "translation_fallback": translation["translation_fallback"],
+    }
+
+
+def public_verification_links(license_record):
+    token = str(license_record.verification_token)
+    return {
+        "verification_url": f"{settings.FRONTEND_BASE_URL.rstrip('/')}/verify/{token}",
+        "qr_code_url": f"/api/v1/public/licenses/{token}/qr/",
+    }
+
+
+def public_license_data(license_record, locale):
+    expires_at = license_record.expires_at
+    if license_record.artifact_kind == License.ArtifactKind.NOTIFICATION_ACKNOWLEDGEMENT:
+        public_status = "RECORDED"
+    elif expires_at and expires_at < timezone.localdate():
+        public_status = "EXPIRED"
+    else:
+        public_status = "VALID"
+    application = license_record.application
+    return {
+        "status": public_status,
+        "artifact_kind": license_record.artifact_kind,
+        "license_number": license_record.license_number,
+        "property": {"name": application.property.name},
+        "property_type": property_type_data(license_record.property_type, locale),
+        "issuing_authority": authority_data(application.responsible_authority),
+        "issued_at": license_record.issued_at,
+        "expires_at": expires_at,
+        "checked_at": timezone.now(),
     }
 
 
@@ -1618,5 +1652,43 @@ class ApplicationLicenseView(ContractAPIView):
                     if license_record.fee_amount_snapshot is not None
                     else None
                 ),
+                "public_verification": public_verification_links(license_record),
             }
         )
+
+
+class PublicLicenseVerificationView(ContractAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(responses={200: PublicLicenseVerificationOutputSerializer})
+    def get(self, request, token):
+        license_record = get_object_or_404(
+            License.objects.select_related(
+                "application__property",
+                "application__responsible_authority",
+                "property_type",
+            ),
+            verification_token=token,
+        )
+        return Response(public_license_data(license_record, requested_locale(request)))
+
+
+class PublicLicenseQrView(ContractAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(responses={(200, "image/svg+xml"): bytes})
+    def get(self, request, token):
+        license_record = get_object_or_404(License, verification_token=token)
+        image = qrcode.make(
+            public_verification_links(license_record)["verification_url"],
+            image_factory=SvgPathImage,
+            border=2,
+        )
+        stream = io.BytesIO()
+        image.save(stream)
+        response = HttpResponse(stream.getvalue(), content_type="image/svg+xml")
+        response["Content-Disposition"] = 'inline; filename="license-verification-qr.svg"'
+        response["Cache-Control"] = "public, max-age=86400"
+        return response

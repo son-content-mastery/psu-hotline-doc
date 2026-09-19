@@ -82,6 +82,20 @@ onMounted(load)
           <dd>{{ formatMoney(license.fee.amount_snapshot, license.fee.currency, locale) }}</dd>
         </template>
       </dl>
+      <div class="mt-8 border-t border-slate-300 pt-7 text-center">
+        <p class="font-bold">{{ t('license.publicVerification') }}</p>
+        <img
+          class="mx-auto mt-3 h-36 w-36"
+          :src="license.public_verification.qr_code_url"
+          :alt="t('license.qrAlt')"
+          width="144"
+          height="144"
+        />
+        <a class="mt-3 inline-block break-all text-sm" :href="license.public_verification.verification_url">
+          {{ license.public_verification.verification_url }}
+        </a>
+        <p class="mt-2 text-sm text-slate-600">{{ t('license.publicVerificationNote') }}</p>
+      </div>
     </article>
 
     <button v-if="license" type="button" class="button-primary no-print mt-7" @click="printPage">

@@ -324,7 +324,7 @@ Property types, document types, and issuing agencies use child translation table
 
 ### Fees are effective-dated and licenses snapshot them
 
-Schedules are append-only/effective-dated master data. Django Admin may close an open schedule by setting only `effective_to`; after closure every field is read-only. A replacement rate is a new row, and closing the prior row creates an immutable audit event. `License.artifact_kind` distinguishes a fee-bearing hotel licence from a non-hotel notification acknowledgement. A hotel licence keeps the schedule FK for provenance and amount/currency/validity snapshots for historical reproduction. Those fields and expiry are null for an acknowledgement. The property type FK records the confirmed processing type at issuance. The application-to-artifact relationship is zero-or-one.
+Schedules are append-only/effective-dated master data. Django Admin may close an open schedule by setting only `effective_to`; after closure every field is read-only. A replacement rate is a new row, and closing the prior row creates an immutable audit event. `License.artifact_kind` distinguishes a fee-bearing hotel licence from a non-hotel notification acknowledgement. A hotel licence keeps the schedule FK for provenance and amount/currency/validity snapshots for historical reproduction. Those fields and expiry are null for an acknowledgement. The property type FK records the confirmed processing type at issuance. The application-to-artifact relationship is zero-or-one. `verification_token` is an immutable random UUID used only for the minimal public verification route; it is not derived from the sequential artifact number.
 
 ### Audit is generic but deliberately small
 
@@ -348,7 +348,7 @@ Implement these database protections where supported, with matching application 
 | `ApplicationDocument` | unique `(application_id, document_type_id, version, attachment_index)`; conditional unique current row per `(application_id, document_type_id, attachment_index)`; positive version/attachment index/file size |
 | `DocumentPreflight` | unique application document; controlled quality/type result codes and version-bound analyzer metadata; no raw OCR text |
 | `FeeSchedule` | amount ≥ 0, validity years > 0, end ≥ start; prevent overlapping active periods for a property type/currency in validation/constraint |
-| `License` | unique application; unique artifact number; hotel licence requires fee/validity/expiry while notification acknowledgement requires those fields to be null |
+| `License` | unique application; unique artifact number; unique opaque verification token; hotel licence requires fee/validity/expiry while notification acknowledgement requires those fields to be null |
 | Histories/audit | indexes by parent/object and descending `created_at`; no product update/delete endpoint |
 
 Add indexes in response to actual list/filter paths, not speculatively. The authority/status and application/document paths above are known MVP queries.

@@ -1,5 +1,6 @@
 import io
 import re
+import uuid
 from datetime import date, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
@@ -1265,6 +1266,69 @@ def test_expiring_license_appears_in_applicant_action_view(seeded, api_client, s
         "action_required": True,
     }
     assert response.data["summary"]["needs_action"] >= 1
+
+
+def test_public_license_verification_uses_opaque_token_and_minimal_fields(seeded, api_client, settings):
+    settings.FRONTEND_BASE_URL = "http://frontend.test"
+    application = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        name="Public verification property",
+    )
+    add_current_documents(application, document_status=ApplicationDocument.Status.APPROVED)
+    _, license_record = approve_application(application_id=application.pk, actor=seeded["officer"])
+
+    api_client.force_authenticate(user=None)
+    response = api_client.get(f"/api/v1/public/licenses/{license_record.verification_token}/")
+    assert response.status_code == 200
+    assert response.data["status"] == "VALID"
+    assert response.data["license_number"] == license_record.license_number
+    assert response.data["property"] == {"name": application.property.name}
+    assert {
+        "application_reference_number",
+        "applicant",
+        "address",
+        "fee",
+        "verification_token",
+    }.isdisjoint(response.data)
+
+    qr = api_client.get(f"/api/v1/public/licenses/{license_record.verification_token}/qr/")
+    assert qr.status_code == 200
+    assert qr["Content-Type"] == "image/svg+xml"
+    assert b"<svg" in qr.content
+
+    license_record.expires_at = timezone.localdate() - timedelta(days=1)
+    license_record.save(update_fields=["expires_at"])
+    expired = api_client.get(f"/api/v1/public/licenses/{license_record.verification_token}/")
+    assert expired.data["status"] == "EXPIRED"
+    assert api_client.get(f"/api/v1/public/licenses/{uuid.uuid4()}/").status_code == 404
+
+    acknowledgement_application = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        type_code="NON_HOTEL_NOTIFICATION",
+        name="Public acknowledgement property",
+    )
+    add_current_documents(
+        acknowledgement_application,
+        document_status=ApplicationDocument.Status.APPROVED,
+    )
+    _, acknowledgement = approve_application(
+        application_id=acknowledgement_application.pk,
+        actor=seeded["officer"],
+    )
+    recorded = api_client.get(f"/api/v1/public/licenses/{acknowledgement.verification_token}/")
+    assert recorded.data["status"] == "RECORDED"
+    assert recorded.data["expires_at"] is None
+
+    api_client.force_authenticate(seeded["applicant"])
+    private_record = api_client.get(f"/api/v1/applications/{application.pk}/license/")
+    assert private_record.data["public_verification"] == {
+        "verification_url": f"http://frontend.test/verify/{license_record.verification_token}",
+        "qr_code_url": f"/api/v1/public/licenses/{license_record.verification_token}/qr/",
+    }
 
 
 def test_session_csrf_login_bootstrap_and_logout(seeded, settings):

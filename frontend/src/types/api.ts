@@ -419,6 +419,22 @@ export interface License {
     currency: string
     fee_schedule_id: number
   } | null
+  public_verification: {
+    verification_url: string
+    qr_code_url: string
+  }
+}
+
+export interface PublicLicenseVerification {
+  status: 'VALID' | 'EXPIRED' | 'RECORDED'
+  artifact_kind: 'HOTEL_LICENSE' | 'NOTIFICATION_ACKNOWLEDGEMENT'
+  license_number: string
+  property: { name: string }
+  property_type: PropertyType
+  issuing_authority: LocalAuthority
+  issued_at: string
+  expires_at: string | null
+  checked_at: string
 }
 
 export interface ApiErrorPayload {

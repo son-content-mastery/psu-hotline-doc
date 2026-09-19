@@ -13,6 +13,7 @@ flowchart TB
     Applicant[Applicant browser]
     LocalOfficer[Local officer browser]
     CentralOfficer[Central officer browser]
+    PublicVerifier[Public verifier / QR scan]
     Admin[Super admin browser]
 
     subgraph System[HoTLinE Doc]
@@ -30,6 +31,7 @@ flowchart TB
     Applicant --> SPA
     LocalOfficer --> SPA
     CentralOfficer --> SPA
+    PublicVerifier --> SPA
     Admin --> AdminUI
     SPA -->|HTTPS REST / JSON<br/>multipart for uploads| API
     AdminUI --> Domain
@@ -110,6 +112,7 @@ The backend owns:
 - the centrally defined application state machine;
 - document review and correction rules;
 - backend-generated references, fees, and licenses;
+- opaque-token public licence verification and server-generated QR images with an allow-listed response;
 - transactions, status history, and immutable audit records;
 - aggregate central reporting; and
 - applicant registration, signed email activation, transactional email outbox creation; and
@@ -125,7 +128,7 @@ PostgreSQL stores:
 - properties, applications, classifications, and current statuses;
 - normalized master data and translation rows;
 - requirements, document metadata, version-bound quality preflight, and review history;
-- fee schedules and issued-license snapshots;
+- fee schedules, issued-license snapshots, and opaque public verification tokens;
 - application status history and audit entries; and
 - email verification time and idempotent email delivery attempts; and
 - constraints that reinforce uniqueness and referential integrity.

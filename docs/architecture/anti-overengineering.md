@@ -48,6 +48,7 @@ Prefer:
 | Audit | Append-only relational rows written in the same transaction | Cross-system audit ingestion becomes a real requirement |
 | Files | Django local/media storage abstraction | A production environment requires durable object storage |
 | Document preflight | Synchronous Pillow plus local Tesseract/Poppler with one-page/timeout bounds; stable advisory codes only | Measured upload latency needs independent scaling or a reviewed external OCR provider |
+| Public verification QR | Small server-side `qrcode` SVG generator over one fixed verification URL | Branded/signed offline artifacts or high-volume generation becomes a measured need |
 | Background work | Database email outbox plus one polling Django worker for approved transactional email; otherwise synchronous requests | Another measured operation needs durable retry or independent scaling |
 | Caching | No application cache | Profiling identifies a stable expensive read and invalidation is defined |
 | Administration | Django Admin | Non-technical external administrators need a dedicated experience |
