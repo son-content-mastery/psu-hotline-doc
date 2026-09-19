@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth bg-slate-50 text-[18px] leading-relaxed text-slate-950 antialiased;
+  }
+
+  body {
+    @apply m-0 min-w-[320px];
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply leading-tight text-slate-950;
+  }
+
+  a {
+    @apply text-brand-700 underline decoration-2 underline-offset-4 hover:text-brand-900;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary {
+    scroll-margin-block: 6rem;
+  }
+
+  :focus-visible {
+    @apply outline outline-4 outline-offset-2 outline-amber-500;
+  }
+
+  [data-page-heading]:focus {
+    outline: none;
+  }
+}
+
+@layer components {
+  .skip-link {
+    @apply fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-slate-950 px-4 py-3 font-bold text-white no-underline transition-transform focus:translate-y-0;
+  }
+
+  .page-narrow {
+    @apply mx-auto max-w-3xl;
+  }
+
+  .page-title {
+    @apply text-3xl font-black tracking-tight sm:text-4xl;
+  }
+
+  .page-intro {
+    @apply mt-3 max-w-2xl text-lg leading-relaxed text-slate-700;
+  }
+
+  .card {
+    @apply rounded-3xl border border-slate-200 bg-white p-5 shadow-card sm:p-7;
+  }
+
+  .button-primary {
+    @apply inline-flex min-h-12 w-full items-center justify-center rounded-xl border-2 border-brand-700 bg-brand-700 px-5 py-3 text-center font-bold text-white no-underline hover:border-brand-800 hover:bg-brand-800 disabled:cursor-not-allowed disabled:border-slate-400 disabled:bg-slate-400 sm:w-auto;
+  }
+
+  .button-secondary {
+    @apply inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-slate-500 bg-white px-5 py-3 text-center font-bold text-slate-900 no-underline hover:bg-slate-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-500;
+  }
+
+  .button-danger {
+    @apply inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-red-800 bg-white px-5 py-3 text-center font-bold text-red-900 no-underline hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-500;
+  }
+
+  .field-label {
+    @apply mb-2 block text-lg font-bold text-slate-950;
+  }
+
+  .field-input {
+    @apply min-h-12 w-full rounded-xl border-2 border-slate-400 bg-white px-4 py-3 text-lg text-slate-950 placeholder:text-slate-500 focus:border-brand-700 focus:ring-brand-700;
+  }
+
+  .field-error {
+    @apply mt-2 font-semibold text-red-800;
+  }
+
+  .status-badge {
+    @apply inline-flex min-h-9 items-center gap-2 rounded-full border border-slate-400 bg-slate-100 px-3 py-1 text-sm font-bold text-slate-900;
+  }
+
+  .definition-grid {
+    @apply grid gap-2 sm:grid-cols-[minmax(10rem,0.8fr)_minmax(0,1.4fr)];
+  }
+
+  .definition-grid dt {
+    @apply font-bold text-slate-700;
+  }
+
+  .definition-grid dd {
+    @apply m-0 break-words;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .no-print,
+  header,
+  .skip-link {
+    display: none !important;
+  }
+
+  body,
+  html,
+  main {
+    background: white !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}
