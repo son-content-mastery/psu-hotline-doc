@@ -26,9 +26,7 @@ describe('officer application review', () => {
     })
     await router.push('/officer/applications/9')
     await router.isReady()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
+    const fetchMock = vi.fn().mockResolvedValue({
         status: 200,
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
@@ -42,7 +40,7 @@ describe('officer application review', () => {
           property: { name: 'Demo Stay', local_authority: { id: 1, code: 'PATONG', name: 'Patong' } },
           classification: { outcome: 'TYPE_1', property_type: { code: 'TYPE_1', name: 'Type 1' }, answers: { rooms: 10, guests: 20, has_restaurant: false } },
           all_required_documents_approved: false,
-          allowed_actions: ['REQUEST_REVISION', 'REJECT'],
+          allowed_actions: ['REVIEW_DOCUMENTS', 'REQUEST_REVISION', 'REJECT'],
           history: [
             { id: 1, from_status: 'SUBMITTED', to_status: 'UNDER_REVIEW', occurred_at: '2026-09-18T05:00:00Z', reason: 'Review started' },
           ],
@@ -51,7 +49,7 @@ describe('officer application review', () => {
               id: 22,
               document_type: { id: 3, code: 'IDENTITY', name: 'Identity evidence' },
               version: 2,
-              status: 'REVISION_REQUIRED',
+              status: 'UPLOADED',
               is_current: true,
               version_label: 'CURRENT',
               category: 'OPERATOR_PREPARED',
@@ -79,8 +77,8 @@ describe('officer application review', () => {
             },
           ],
         }),
-      }),
-    )
+      })
+    vi.stubGlobal('fetch', fetchMock)
 
     const wrapper = mount(OfficerReviewView, { global: { plugins: [i18n, router] } })
     await flushPromises()
@@ -94,7 +92,22 @@ describe('officer application review', () => {
     expect(wrapper.findAll('button').some((button) => button.text().includes('Return application for correction'))).toBe(true)
     expect(wrapper.findAll('button').some((button) => button.text().includes('Reject application'))).toBe(true)
     expect(text).not.toContain('Approve and issue licence')
-    expect(text).not.toContain('Record document review')
+
+    const reviewForm = wrapper.get('[data-testid="document-review-form"]')
+    await reviewForm.get('input[value="REVISION_REQUIRED"]').setValue()
+    expect(reviewForm.find('textarea').exists()).toBe(true)
+    await reviewForm.get('textarea').setValue('Please replace the unclear page.')
+
+    await reviewForm.get('input[value="APPROVED"]').setValue()
+    expect(reviewForm.find('textarea').exists()).toBe(false)
+    expect(reviewForm.text()).not.toContain('Reason the applicant will see')
+    expect(reviewForm.text()).toContain('Record document review')
+
+    await reviewForm.trigger('submit')
+    await flushPromises()
+    const reviewRequest = fetchMock.mock.calls.find(([url]) => url === '/api/v1/officer/documents/22/review/')
+    expect(reviewRequest).toBeDefined()
+    expect(JSON.parse(String((reviewRequest?.[1] as RequestInit).body))).toEqual({ outcome: 'APPROVED' })
     wrapper.unmount()
   })
 })

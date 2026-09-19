@@ -87,11 +87,11 @@ Allowed document outcomes:
 
 | API decision | UI label intent | Reason rule |
 | --- | --- | --- |
-| `APPROVED` | เอกสารถูกต้อง / Approve document | Optional note only if supported; no invented requirement |
+| `APPROVED` | เอกสารถูกต้อง / Approve document | No reason field; submit the outcome directly |
 | `REVISION_REQUIRED` | ขอให้แก้ไขเอกสาร / Request document revision | Human-readable reason required |
 | `REJECTED` | ปฏิเสธเอกสาร / Reject document | Human-readable reason required |
 
-Use native radio buttons or three explicit buttons followed by a confirmation form. Revision and rejection keep the primary confirm action disabled only while the visible reason field is empty; also enforce the rule server-side. The reason label explains that the applicant will see this text. Trim whitespace, retain a rejected server value for correction, and render saved reasons as escaped text.
+Use native radio buttons or three explicit buttons followed by a confirmation form. Selecting approval shows the confirmation action without a reason field and clears any draft reason left from another outcome. Revision and rejection reveal a required reason field; also enforce the rule server-side. The reason label explains that the applicant will see this text. Trim whitespace, retain a rejected server value for correction, and render saved reasons as escaped text.
 
 On confirmation:
 
@@ -161,7 +161,7 @@ The summary includes the server-provided application status history and human-re
 2. Direct navigation and file requests for another LocalAuthority fail without data leakage.
 3. Queue defaults to actionable work and remains usable as a table on desktop and labelled cards on mobile.
 4. Officer reviews each current document version as approved, revision required, or rejected.
-5. Revision and rejection cannot be submitted without a human-readable reason on both client and server.
+5. Approval does not show or send a reason; revision and rejection cannot be submitted without a human-readable reason on both client and server.
 6. A new uploaded version is visibly distinct and requires a new review; old review history remains.
 7. Approval is unavailable until all required current documents and application conditions pass authoritative checks.
 8. All application transitions are backend-controlled and successful decisions create visible history/audit feedback.

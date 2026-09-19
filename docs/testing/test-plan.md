@@ -137,7 +137,7 @@ If frontend tests are not present, record that fact and run the production build
 
 **Given** a reviewable same-authority application/document  
 **When** the officer submits document revision, document rejection, application revision, or application rejection with a missing/blank reason  
-**Then** the API returns `400 REASON_REQUIRED` and creates no review, transition, history, or audit record. Approval may omit a reason.
+**Then** the API returns `400 REASON_REQUIRED` and creates no review, transition, history, or audit record. Document approval omits the reason, and its UI presents the confirmation action without an unnecessary reason field.
 
 ### TC-15 — Invalid status transitions are rejected
 

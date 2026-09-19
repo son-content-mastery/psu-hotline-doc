@@ -87,6 +87,12 @@ function ensureForm(document: OfficerDocument): ReviewFormState {
   return form
 }
 
+function handleReviewOutcomeChange(document: OfficerDocument): void {
+  const form = ensureForm(document)
+  form.errorKey = ''
+  if (form.outcome === 'APPROVED') form.reason = ''
+}
+
 async function load(keepAnnouncement = false): Promise<void> {
   loading.value = true
   loadError.value = ''
@@ -433,7 +439,7 @@ onMounted(load)
                       :name="`review-${documentItem.id}`"
                       :value="option.value"
                       class="h-5 w-5 text-brand-700 focus:ring-brand-700"
-                      @change="ensureForm(documentItem).errorKey = ''"
+                      @change="handleReviewOutcomeChange(documentItem)"
                     />
                     <span class="font-bold">{{ t(option.key) }}</span>
                   </label>
@@ -449,19 +455,23 @@ onMounted(load)
               </p>
 
               <div v-if="ensureForm(documentItem).outcome" class="mt-5">
-                <label class="field-label" :for="`document-reason-${documentItem.id}`">
-                  {{ t('officer.reason') }}
-                  <span v-if="ensureForm(documentItem).outcome !== 'APPROVED'" class="text-base font-normal">({{ t('common.required') }})</span>
-                </label>
-                <textarea
-                  :id="`document-reason-${documentItem.id}`"
-                  v-model="ensureForm(documentItem).reason"
-                  class="field-input min-h-28"
-                  :aria-invalid="Boolean(ensureForm(documentItem).errorKey)"
-                  :aria-describedby="`document-reason-help-${documentItem.id}${ensureForm(documentItem).errorKey ? ` document-error-${documentItem.id}` : ''}`"
-                  @input="ensureForm(documentItem).errorKey = ''"
-                />
-                <p :id="`document-reason-help-${documentItem.id}`" class="mt-2 text-slate-600">{{ t('officer.reasonHelp') }}</p>
+                <div v-if="ensureForm(documentItem).outcome !== 'APPROVED'">
+                  <label class="field-label" :for="`document-reason-${documentItem.id}`">
+                    {{ t('officer.reason') }}
+                    <span class="text-base font-normal">({{ t('common.required') }})</span>
+                  </label>
+                  <textarea
+                    :id="`document-reason-${documentItem.id}`"
+                    v-model="ensureForm(documentItem).reason"
+                    class="field-input min-h-28"
+                    :aria-invalid="Boolean(ensureForm(documentItem).errorKey)"
+                    :aria-describedby="`document-reason-help-${documentItem.id}${ensureForm(documentItem).errorKey ? ` document-error-${documentItem.id}` : ''}`"
+                    @input="ensureForm(documentItem).errorKey = ''"
+                  />
+                  <p :id="`document-reason-help-${documentItem.id}`" class="mt-2 text-slate-600">
+                    {{ t('officer.reasonHelp') }}
+                  </p>
+                </div>
                 <p v-if="ensureForm(documentItem).errorKey" :id="`document-error-${documentItem.id}`" class="field-error" role="alert">
                   {{ t(ensureForm(documentItem).errorKey) }}
                 </p>
