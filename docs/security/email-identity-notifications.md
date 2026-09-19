@@ -12,7 +12,7 @@ The existing password-reset flow remains in scope and uses the same delivery con
 
 ### Applicant registration
 
-1. Public registration accepts display name, normalized email, password, password confirmation, language preference, and required privacy/terms consent only.
+1. Public registration accepts normalized email, password, password confirmation, and required privacy/terms consent only. The server assigns a neutral localized display name and stores the notification language from the request's supported `Accept-Language`, with Thai as the fallback. Applicants are not asked for profile data before it is needed in the application flow.
 2. The server always assigns `APPLICANT`. A public request can never set role, staff status, superuser status, or `LocalAuthority`.
 3. A new account records a separate email-verification state such as nullable `email_verified_at`. Account disablement (`is_active`) must remain distinct from email verification so administrators can revoke access without corrupting verification history.
 4. Registration returns a generic accepted response. Duplicate-email and unknown-email resend requests must not reveal whether an account exists.

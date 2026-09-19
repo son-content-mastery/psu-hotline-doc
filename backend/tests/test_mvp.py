@@ -966,6 +966,8 @@ def test_openapi_describes_enriched_officer_and_requirement_payloads(seeded):
     assert {"description", "instructions", "guidance"} <= set(requirement_properties)
     applicant_properties = schemas["ApplicantApplicationListItemOutput"]["properties"]
     assert {"property_type", "responsible_authority", "requirements"} <= set(applicant_properties)
+    registration_properties = schemas["Registration"]["properties"]
+    assert set(registration_properties) == {"email", "password", "password_confirmation", "terms_accepted"}
     assert "new_password" not in schemas["PasswordResetCompleteOutput"]["properties"]
 
 
@@ -1075,11 +1077,9 @@ def test_registration_activation_and_verified_login(db, settings):
     client.get("/api/v1/auth/me/")
     csrf_token = client.cookies["csrftoken"].value
     payload = {
-        "display_name": "New Applicant",
         "email": "new.applicant@example.test",
         "password": "StrongRegistrationPass123!",
         "password_confirmation": "StrongRegistrationPass123!",
-        "language": "en",
         "terms_accepted": True,
     }
 
@@ -1088,6 +1088,7 @@ def test_registration_activation_and_verified_login(db, settings):
         payload,
         content_type="application/json",
         HTTP_X_CSRFTOKEN=csrf_token,
+        HTTP_ACCEPT_LANGUAGE="en-US,en;q=0.9",
     )
     assert response.status_code == 202
     assert response.json() == {"accepted": True}
@@ -1096,6 +1097,7 @@ def test_registration_activation_and_verified_login(db, settings):
     assert user.local_authority_id is None
     assert user.is_staff is False
     assert user.is_superuser is False
+    assert user.display_name == "Applicant"
     assert user.preferred_language == User.Language.ENGLISH
     assert user.email_verified_at is None
     assert user.check_password(payload["password"])
@@ -1150,7 +1152,7 @@ def test_registration_activation_and_verified_login(db, settings):
     assert logged_in.status_code == 200
 
 
-def test_registration_rejects_role_mass_assignment_and_weak_input(db):
+def test_registration_rejects_server_owned_profile_and_role_fields(db):
     client = Client(enforce_csrf_checks=True)
     client.get("/api/v1/auth/me/")
     csrf_token = client.cookies["csrftoken"].value
@@ -1161,7 +1163,7 @@ def test_registration_rejects_role_mass_assignment_and_weak_input(db):
             "email": "attempted.admin@example.test",
             "password": "StrongRegistrationPass123!",
             "password_confirmation": "StrongRegistrationPass123!",
-            "language": "th",
+            "language": "en",
             "terms_accepted": True,
             "role": "SUPER_ADMIN",
         },
@@ -1169,8 +1171,30 @@ def test_registration_rejects_role_mass_assignment_and_weak_input(db):
         HTTP_X_CSRFTOKEN=csrf_token,
     )
     assert response.status_code == 400
-    assert "role" in response.json()["error"]["fields"]
+    assert set(response.json()["error"]["fields"]) == {"display_name", "language", "role"}
     assert not User.objects.filter(email="attempted.admin@example.test").exists()
+
+
+def test_registration_uses_thai_profile_fallback_for_unsupported_locale(db):
+    client = Client(enforce_csrf_checks=True)
+    client.get("/api/v1/auth/me/")
+    csrf_token = client.cookies["csrftoken"].value
+    response = client.post(
+        "/api/v1/auth/register/",
+        {
+            "email": "thai.fallback@example.test",
+            "password": "StrongRegistrationPass123!",
+            "password_confirmation": "StrongRegistrationPass123!",
+            "terms_accepted": True,
+        },
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+        HTTP_ACCEPT_LANGUAGE="fr-FR,fr;q=0.9",
+    )
+    assert response.status_code == 202
+    user = User.objects.get(email="thai.fallback@example.test")
+    assert user.display_name == "ผู้ยื่นคำขอ"
+    assert user.preferred_language == User.Language.THAI
 
 
 def test_registration_and_activation_resend_do_not_enumerate_accounts(db):
@@ -1200,11 +1224,9 @@ def test_registration_and_activation_resend_do_not_enumerate_accounts(db):
     assert EmailOutbox.objects.filter(recipient=user).count() == 1
 
     duplicate_payload = {
-        "display_name": "Different Name",
         "email": user.email,
         "password": "AnotherStrongRegistrationPass123!",
         "password_confirmation": "AnotherStrongRegistrationPass123!",
-        "language": "en",
         "terms_accepted": True,
     }
     duplicate = client.post(

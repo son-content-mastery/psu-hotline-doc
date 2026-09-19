@@ -47,7 +47,7 @@ The primary flow is linear:
 
 Classification and the initial document requirements are available before authentication. Authentication must preserve the completed classification result and return the user to the same flow. Do not require an applicant account merely to learn whether a licence may be needed.
 
-Registration is applicant-only and asks only for account essentials, notification language, and explicit consent. The success state directs the applicant to email without revealing whether an address already existed. Activation opens on a dedicated page with clear loading, success, invalid/expired, and resend states. Officer and central accounts are never self-registered.
+Registration is applicant-only and asks only for email, password, password confirmation, and explicit consent. Notification language follows the current supported interface language, while the server assigns a neutral localized display name; legal or operator identity is collected later only where the application requires it. The success state directs the applicant to email without revealing whether an address already existed. Activation opens on a dedicated page with clear loading, success, invalid/expired, and resend states. Officer and central accounts are never self-registered.
 
 Applicant pages use a single-column layout, no sidebar, and no complex dashboard. After authentication, an applicant may access their own applications, but navigation must stay small and task-oriented.
 

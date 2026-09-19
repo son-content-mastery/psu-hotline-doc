@@ -33,10 +33,12 @@ describe('account registration and activation', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     window.localStorage.clear()
+    document.documentElement.lang = 'th'
   })
 
   it('creates only an applicant account request and shows the generic email handoff', async () => {
     i18n.global.locale.value = 'en'
+    document.documentElement.lang = 'en'
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(202, { accepted: true }))
     vi.stubGlobal('fetch', fetchMock)
     const router = createAuthRouter()
@@ -44,7 +46,6 @@ describe('account registration and activation', () => {
     await router.isReady()
     const wrapper = mount(RegisterView, { global: { plugins: [createPinia(), i18n, router] } })
 
-    await wrapper.get('#display-name').setValue('New applicant')
     await wrapper.get('#register-email').setValue('new@example.test')
     await wrapper.get('#register-password').setValue('Secure-passphrase-2026')
     await wrapper.get('#register-password-confirmation').setValue('Secure-passphrase-2026')
@@ -57,15 +58,18 @@ describe('account registration and activation', () => {
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit
     const body = JSON.parse(String(request.body)) as Record<string, unknown>
     expect(body).toMatchObject({
-      display_name: 'New applicant',
       email: 'new@example.test',
-      language: 'en',
       terms_accepted: true,
     })
+    expect(body).not.toHaveProperty('display_name')
+    expect(body).not.toHaveProperty('language')
     expect(body).not.toHaveProperty('role')
     expect(body).not.toHaveProperty('local_authority')
     expect(body).not.toHaveProperty('is_staff')
+    expect(new Headers(request.headers).get('Accept-Language')).toBe('en')
     expect(wrapper.text()).toContain('Check your email to verify the account')
+    expect(wrapper.find('#display-name').exists()).toBe(false)
+    expect(wrapper.find('#preferred-language').exists()).toBe(false)
     expect(wrapper.get('a').attributes('href')).toBe('/login?redirect=/applications')
     expect(window.localStorage.getItem('hotline-doc.activation-redirect')).toBe('/applications')
     wrapper.unmount()
@@ -80,7 +84,6 @@ describe('account registration and activation', () => {
     await router.isReady()
     const wrapper = mount(RegisterView, { attachTo: document.body, global: { plugins: [createPinia(), i18n, router] } })
 
-    await wrapper.get('#display-name').setValue('New applicant')
     await wrapper.get('#register-email').setValue('new@example.test')
     await wrapper.get('#register-password').setValue('first-password')
     await wrapper.get('#register-password-confirmation').setValue('different-password')
@@ -113,7 +116,6 @@ describe('account registration and activation', () => {
     await router.isReady()
     const wrapper = mount(RegisterView, { global: { plugins: [createPinia(), i18n, router] } })
 
-    await wrapper.get('#display-name').setValue('New applicant')
     await wrapper.get('#register-email').setValue('new@example.test')
     await wrapper.get('#register-password').setValue('Password123')
     await wrapper.get('#register-password-confirmation').setValue('Password123')

@@ -4,23 +4,19 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import InlineAlert from '@/components/InlineAlert.vue'
-import type { AppLocale } from '@/i18n'
 import { rememberActivationRedirect } from '@/services/activationContinuation'
 import { ApiError, api } from '@/services/api'
 
 const route = useRoute()
-const { locale, t } = useI18n()
+const { t } = useI18n()
 
 const form = reactive({
-  displayName: '',
   email: '',
   password: '',
   passwordConfirmation: '',
-  language: locale.value as AppLocale,
   termsAccepted: false,
 })
 const invalid = reactive({
-  displayName: false,
   email: false,
   password: false,
   passwordConfirmation: false,
@@ -47,7 +43,6 @@ async function focusFirstError(): Promise<void> {
 }
 
 function validate(): boolean {
-  invalid.displayName = !form.displayName.trim()
   invalid.email = !form.email.trim() || !form.email.includes('@')
   invalid.password = !form.password
   invalid.passwordConfirmation = !form.passwordConfirmation || form.password !== form.passwordConfirmation
@@ -66,11 +61,9 @@ async function submit(): Promise<void> {
   submitting.value = true
   try {
     await api.post('/api/v1/auth/register/', {
-      display_name: form.displayName.trim(),
       email: form.email.trim(),
       password: form.password,
       password_confirmation: form.passwordConfirmation,
-      language: form.language,
       terms_accepted: form.termsAccepted,
     })
     rememberActivationRedirect(route.query.redirect)
@@ -130,24 +123,6 @@ async function resend(): Promise<void> {
 
     <form v-else class="card mt-7" novalidate @submit.prevent="submit">
       <div>
-        <label class="field-label" for="display-name">
-          {{ t('auth.registration.displayName') }} ({{ t('common.required') }})
-        </label>
-        <input
-          id="display-name"
-          v-model="form.displayName"
-          class="field-input"
-          type="text"
-          autocomplete="name"
-          :aria-invalid="invalid.displayName || Boolean(backendErrors.display_name)"
-          :aria-describedby="invalid.displayName || backendErrors.display_name ? 'display-name-error' : undefined"
-        />
-        <p v-if="invalid.displayName || backendErrors.display_name" id="display-name-error" class="field-error" role="alert">
-          {{ t('auth.registration.displayNameRequired') }}
-        </p>
-      </div>
-
-      <div class="mt-6">
         <label class="field-label" for="register-email">{{ t('auth.email') }} ({{ t('common.required') }})</label>
         <input
           id="register-email"
@@ -214,15 +189,6 @@ async function resend(): Promise<void> {
         >
           {{ t('auth.registration.passwordMismatch') }}
         </p>
-      </div>
-
-      <div class="mt-6">
-        <label class="field-label" for="preferred-language">{{ t('auth.registration.language') }}</label>
-        <select id="preferred-language" v-model="form.language" class="field-input">
-          <option value="th">{{ t('common.thai') }}</option>
-          <option value="en">{{ t('common.english') }}</option>
-        </select>
-        <p class="mt-2 text-slate-700">{{ t('auth.registration.languageHelp') }}</p>
       </div>
 
       <div class="mt-6 rounded-2xl border border-slate-300 bg-slate-50 p-4">

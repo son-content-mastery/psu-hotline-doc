@@ -38,11 +38,9 @@ class LoginSerializer(StrictSerializer):
 
 
 class RegistrationSerializer(StrictSerializer):
-    display_name = serializers.CharField(max_length=255, trim_whitespace=True)
     email = serializers.EmailField()
     password = serializers.CharField(trim_whitespace=False, write_only=True)
     password_confirmation = serializers.CharField(trim_whitespace=False, write_only=True)
-    language = serializers.ChoiceField(choices=User.Language.choices)
     terms_accepted = StrictBooleanField()
 
     def validate(self, attrs):
@@ -53,7 +51,7 @@ class RegistrationSerializer(StrictSerializer):
             raise serializers.ValidationError({"terms_accepted": ["Acceptance is required."]})
         candidate = User(
             email=attrs["email"].strip().lower(),
-            display_name=attrs["display_name"],
+            display_name="Applicant",
             role=User.Role.APPLICANT,
         )
         try:

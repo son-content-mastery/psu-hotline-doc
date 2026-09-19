@@ -466,13 +466,15 @@ class RegisterView(ContractAPIView):
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
         email = values["email"].strip().lower()
+        preferred_language = User.Language.ENGLISH if requested_locale(request) == "en" else User.Language.THAI
+        display_name = "Applicant" if preferred_language == User.Language.ENGLISH else "ผู้ยื่นคำขอ"
         with transaction.atomic():
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
-                    "display_name": values["display_name"],
+                    "display_name": display_name,
                     "role": User.Role.APPLICANT,
-                    "preferred_language": values["language"],
+                    "preferred_language": preferred_language,
                     "is_active": True,
                 },
             )

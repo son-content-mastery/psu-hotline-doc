@@ -172,11 +172,9 @@ All scoping is applied to backend querysets before object lookup. Out-of-scope o
 
 ```json
 {
-  "display_name": "ผู้ยื่นตัวอย่าง",
   "email": "applicant@example.test",
   "password": "user-supplied password",
   "password_confirmation": "user-supplied password",
-  "language": "th",
   "terms_accepted": true
 }
 ```
@@ -187,7 +185,7 @@ All scoping is applied to backend querysets before object lookup. Out-of-scope o
 { "accepted": true }
 ```
 
-The server always assigns `APPLICANT`, null authority, non-staff, and non-superuser values. Unknown fields—including role, authority, staff, superuser, active, and verification fields—are rejected. A duplicate valid request returns the same response and never overwrites the existing profile or password. New accounts cannot log in until activation succeeds.
+The server always assigns `APPLICANT`, null authority, non-staff, and non-superuser values. It also assigns a neutral localized display name and selects the stored notification language from a supported `Accept-Language` value (`en` or Thai fallback). Unknown fields—including display name, language, role, authority, staff, superuser, active, and verification fields—are rejected. A duplicate valid request returns the same response and never overwrites the existing profile, language, or password. New accounts cannot log in until activation succeeds.
 
 **Important errors:** `400 VALIDATION_ERROR` for field, consent, password confirmation, or password-policy failures; `403 CSRF_FAILED`; `429 RATE_LIMITED`.
 

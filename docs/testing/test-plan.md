@@ -243,7 +243,7 @@ If frontend tests are not present, record that fact and run the production build
 
 **When** they register, attempt role mass assignment, sign in before activation, consume the emailed token, and reuse it
 
-**Then** only an unverified `APPLICANT` can be created; protected fields are rejected; pre-verification login is denied; activation succeeds once; expiry, reuse, malformed token, or changed email fails; registration/resend do not enumerate accounts; and the accessible Thai/English UI retains valid input and explains the next action.
+**Then** only an unverified `APPLICANT` can be created; display name, notification language, and protected role fields remain server-owned; the supported interface locale supplies the neutral name and notification language; pre-verification login is denied; activation succeeds once; expiry, reuse, malformed token, or changed email fails; registration/resend do not enumerate accounts; and the accessible Thai/English UI retains valid input and explains the next action.
 
 ### TC-28 — Transactional notifications are scoped, idempotent, and retryable
 
