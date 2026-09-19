@@ -445,6 +445,18 @@ export interface CentralSummary {
       by_stage: CentralStageItem[]
     }
   }
+  anonymous_workload: {
+    period: string
+    minimum_group_size: number
+    contributor_count: number | null
+    suppressed: boolean
+    rows: Array<{
+      officer_reference: string
+      document_reviews: number
+      application_decisions: number
+      total_actions: number
+    }>
+  }
 }
 
 export interface License {

@@ -231,6 +231,8 @@ All restrictions are enforced in backend querysets/object permissions/domain fun
 - Central data is read-only in the MVP and contains only fields necessary for aggregates.
 - Average stage waits are derived from application creation/status-history intervals and exclude time after terminal completion.
 - “Unusually old” means the current non-terminal stage has not changed for at least `CENTRAL_OVERDUE_THRESHOLD_DAYS` (seven by default). The result is an aggregate count and stage breakdown, not an individual case list.
+- Monthly workload counts include only immutable document reviews and terminal approve/reject status events by local officers. Period references are salted and rotate monthly.
+- If contributing officers are fewer than `ANONYMOUS_WORKLOAD_MIN_GROUP_SIZE` (minimum/default `3`), suppress all rows and the exact contributor count. Never return identity or authority fields.
 
 ## 14. Demo-data and Privacy Rules
 

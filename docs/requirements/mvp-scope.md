@@ -126,6 +126,13 @@ For externally issued items, show database-managed issuing agency, applicable re
 - Report the count of applications that have remained in their current stage for at least a configurable threshold (seven days by default), with an aggregate stage breakdown.
 - Return no individual application, applicant, property, officer, or free-text details in timing analytics. These metrics identify process bottlenecks and do not rank people.
 
+### S6 — Pseudonymous Workload (implemented optional capability)
+
+- Count document reviews and terminal application decisions per contributing local officer for the current calendar month.
+- Derive a salted officer reference that rotates each month; never return user ID, name, email, or authority.
+- Suppress the complete table and exact contributor count when fewer than the configured minimum group size (three by default) have activity.
+- Order by rotating reference rather than performance and label the report as workload balancing, not individual ranking.
+
 ### M11 — Minimal Central Overview
 
 - Show total, waiting review, waiting for applicant revision, and approved counts.
@@ -188,7 +195,7 @@ The demo is successful only if applicant ownership, officer authority scoping, s
 Do not implement these until the complete Must Have flow is working:
 
 - full OCR or advanced AI document understanding;
-- individual officer productivity reports outside the pseudonymous S6 rules;
+- identified individual officer productivity reports;
 - backup-management UI;
 - discussion/chat;
 - service-provider marketplace;

@@ -53,6 +53,8 @@ The grid must explicitly say that it is not a geographic boundary map. Do not dr
 
 Show average wait per non-terminal stage with the number of contributing applications, followed by one unusually-old-work total and aggregate stage breakdown using the configured day threshold. Explain that the values come from server status history, are aggregate-only, and are intended to locate process bottlenecks rather than rank officers. Do not link these values to individual cases.
 
+Below it, show the current monthly pseudonymous workload table only when the backend clears the minimum-group threshold. Use the rotating `OFF-` reference and counts for document reviews, application decisions, and total actions. When suppressed, explain the privacy threshold without showing the exact contributor count. Never add names, authority, sortable performance ranks, or links to officer records.
+
 ## Ordering and formatting
 
 - Counters stay in the specified order.

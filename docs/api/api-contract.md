@@ -1291,6 +1291,8 @@ For a non-hotel notification, `artifact_kind` is `NOTIFICATION_ACKNOWLEDGEMENT`,
 
 `timing_analytics.average_wait_by_stage` contains `stage`, `average_hours`, and `sample_count` derived from status-history intervals. `timing_analytics.overdue` contains the configured `threshold_days`, aggregate `total`, and `by_stage` counts for non-terminal applications whose current stage age meets the threshold. It contains no individual case or officer data.
 
+`anonymous_workload` contains calendar `period`, `minimum_group_size`, nullable `contributor_count`, `suppressed`, and rows of rotating `officer_reference`, `document_reviews`, `application_decisions`, and `total_actions`. When contributors are below the privacy threshold, `contributor_count` is null and `rows` is empty. It never returns user ID, name, email, or authority.
+
 **Important errors:** `401 AUTHENTICATION_REQUIRED`; `403 PERMISSION_DENIED`. Empty application data returns zero totals, empty type/stage groups, and all active authority rows with zero counts rather than `404`.
 
 ---

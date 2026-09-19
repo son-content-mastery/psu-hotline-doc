@@ -230,6 +230,10 @@ Public verification is the only anonymous route that reads an issued decision ar
 
 The case library requires a verified `LOCAL_OFFICER`, but results may draw from completed cases province-wide to support consistent review. The endpoint returns an explicit structured allow-list and a salted case pseudonym. It never returns source authority, database/application/property IDs, applicant, property name, address, reference number, filenames, extracted content, or free-text decision reasons. Database-managed FAQs contain policy guidance only and must not contain real personal data.
 
+## Pseudonymous Workload
+
+The central workload report uses an HMAC reference whose salt includes the calendar month, so references cannot be linked across periods without the server secret. The API omits identity and authority fields, sorts by reference rather than output, and suppresses every row plus the exact contributor count below the minimum group size. These protections reduce re-identification risk; the report must not be described or used as an individual performance ranking.
+
 ### Expected protocol safeguards
 
 The final choice depends on official ThaiID documentation and approval available at integration time. If the supported flow is OpenID Connect/OAuth 2.0, use Authorization Code flow with PKCE and:

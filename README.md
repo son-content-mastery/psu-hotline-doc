@@ -20,6 +20,7 @@ This repository contains a two-day Hackathon MVP intended for local demonstratio
 - Authority-scoped officer queue and document review. Approval needs no reason; correction and rejection require a reason visible to the applicant.
 - Officer-only searchable library of de-identified completed cases plus bilingual database-managed review FAQs; similar cases remain advisory.
 - Read-only central overview with all 19 configured Phuket authorities, accessible area detail, average stage waits, and aggregate unusually-old-work signals.
+- Monthly rotating pseudonymous officer workload counts with minimum-group suppression; no officer identity or authority is returned.
 - Transactional activation, workflow, and configurable licence-expiry reminder email through a PostgreSQL outbox with bounded retry. Gmail SMTP is supported as delivery transport, not Google OAuth.
 - Thai and English UI, backend-enforced RBAC, immutable audit records, and automated backend/frontend coverage.
 

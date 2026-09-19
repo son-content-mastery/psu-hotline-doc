@@ -54,6 +54,17 @@ const summary = {
       by_stage: [{ stage: 'LOCAL_OFFICER_REVIEW', count: 2 }],
     },
   },
+  anonymous_workload: {
+    period: '2026-09',
+    minimum_group_size: 3,
+    contributor_count: 3,
+    suppressed: false,
+    rows: [
+      { officer_reference: 'OFF-ABC12345', document_reviews: 8, application_decisions: 2, total_actions: 10 },
+      { officer_reference: 'OFF-DEF67890', document_reviews: 6, application_decisions: 1, total_actions: 7 },
+      { officer_reference: 'OFF-GHI24680', document_reviews: 4, application_decisions: 1, total_actions: 5 },
+    ],
+  },
 }
 
 describe('central overview', () => {
@@ -74,6 +85,7 @@ describe('central overview', () => {
     await flushPromises()
 
     expect(wrapper.findAll('caption').map((caption) => caption.text())).toEqual([
+      'Pseudonymous workload',
       'Applications by property type',
       'Applications by local authority',
       'Applications by current stage',
@@ -82,6 +94,9 @@ describe('central overview', () => {
     expect(wrapper.get('#timing-analytics-title').text()).toBe('Waiting time and unusually old work')
     expect(wrapper.text()).toContain('36 hr')
     expect(wrapper.text()).toContain('Total unusually old applications')
+    expect(wrapper.text()).toContain('OFF-ABC12345')
+    expect(wrapper.text()).toContain('References rotate monthly')
+    expect(wrapper.text()).not.toContain('officer@example')
     expect(wrapper.text()).toContain('Patong Municipality')
     expect(wrapper.findAll('#authority-table tbody tr')).toHaveLength(5)
     expect(

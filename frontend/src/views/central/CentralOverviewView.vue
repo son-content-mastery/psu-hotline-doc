@@ -95,7 +95,9 @@ function isCompleteResponse(value: CentralSummary): boolean {
     value.authority_zeroes_included === true &&
     Array.isArray(value.by_current_stage) &&
     Array.isArray(value.timing_analytics?.average_wait_by_stage) &&
-    typeof value.timing_analytics?.overdue?.total === 'number'
+    typeof value.timing_analytics?.overdue?.total === 'number' &&
+    typeof value.anonymous_workload?.suppressed === 'boolean' &&
+    Array.isArray(value.anonymous_workload?.rows)
   )
 }
 
@@ -256,6 +258,35 @@ onMounted(() => load())
               </li>
             </ul>
           </div>
+        </div>
+        <div class="mt-6 rounded-2xl border border-slate-200 p-5">
+          <h3 class="text-lg font-black">{{ t('central.workloadTitle') }}</h3>
+          <p class="mt-2 text-slate-700">{{ t('central.workloadPeriod', { period: summary.anonymous_workload.period }) }}</p>
+          <InlineAlert v-if="summary.anonymous_workload.suppressed" tone="info" class="mt-4">
+            {{ t('central.workloadSuppressed', { count: summary.anonymous_workload.minimum_group_size }) }}
+          </InlineAlert>
+          <div v-else class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-left">
+              <caption class="sr-only">{{ t('central.workloadTitle') }}</caption>
+              <thead class="bg-slate-100">
+                <tr>
+                  <th scope="col" class="p-3">{{ t('central.workloadReference') }}</th>
+                  <th scope="col" class="p-3 text-right">{{ t('central.workloadReviews') }}</th>
+                  <th scope="col" class="p-3 text-right">{{ t('central.workloadDecisions') }}</th>
+                  <th scope="col" class="p-3 text-right">{{ t('central.workloadTotal') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in summary.anonymous_workload.rows" :key="item.officer_reference" class="border-t border-slate-200">
+                  <th scope="row" class="p-3 font-bold">{{ item.officer_reference }}</th>
+                  <td class="p-3 text-right">{{ formatNumber(item.document_reviews, locale) }}</td>
+                  <td class="p-3 text-right">{{ formatNumber(item.application_decisions, locale) }}</td>
+                  <td class="p-3 text-right font-black">{{ formatNumber(item.total_actions, locale) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="mt-4 text-sm text-slate-600">{{ t('central.workloadPrivacy') }}</p>
         </div>
         <p class="mt-5 text-sm text-slate-600">{{ t('central.analyticsPrivacy') }}</p>
       </section>

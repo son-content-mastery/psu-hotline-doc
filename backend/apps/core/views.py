@@ -35,6 +35,7 @@ from .models import (
     Application,
     ApplicationDocument,
     ApplicationRequirement,
+    ApplicationStatusHistory,
     CaseLibraryArticle,
     ClassificationRule,
     DocumentReview,
@@ -1696,6 +1697,71 @@ def central_timing_analytics(queryset):
     }
 
 
+def anonymous_officer_reference(user_id, period):
+    return "OFF-" + salted_hmac(
+        f"anonymous-workload:{period}",
+        str(user_id),
+    ).hexdigest()[:8].upper()
+
+
+def anonymous_workload_analytics():
+    period_start = timezone.localtime(timezone.now()).replace(
+        day=1,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    period = period_start.strftime("%Y-%m")
+    actions = defaultdict(lambda: {"document_reviews": 0, "application_decisions": 0})
+    for row in (
+        DocumentReview.objects.filter(
+            reviewed_at__gte=period_start,
+            reviewer__role=User.Role.LOCAL_OFFICER,
+        )
+        .values("reviewer_id")
+        .annotate(count=Count("id"))
+    ):
+        actions[row["reviewer_id"]]["document_reviews"] = row["count"]
+    for row in (
+        ApplicationStatusHistory.objects.filter(
+            created_at__gte=period_start,
+            actor__role=User.Role.LOCAL_OFFICER,
+            to_status__in=[Application.Status.APPROVED, Application.Status.REJECTED],
+        )
+        .values("actor_id")
+        .annotate(count=Count("id"))
+    ):
+        actions[row["actor_id"]]["application_decisions"] = row["count"]
+
+    minimum_group_size = settings.ANONYMOUS_WORKLOAD_MIN_GROUP_SIZE
+    if len(actions) < minimum_group_size:
+        return {
+            "period": period,
+            "minimum_group_size": minimum_group_size,
+            "contributor_count": None,
+            "suppressed": True,
+            "rows": [],
+        }
+    rows = []
+    for user_id, counts in actions.items():
+        rows.append(
+            {
+                "officer_reference": anonymous_officer_reference(user_id, period),
+                **counts,
+                "total_actions": counts["document_reviews"] + counts["application_decisions"],
+            }
+        )
+    rows.sort(key=lambda item: item["officer_reference"])
+    return {
+        "period": period,
+        "minimum_group_size": minimum_group_size,
+        "contributor_count": len(rows),
+        "suppressed": False,
+        "rows": rows,
+    }
+
+
 class CentralSummaryView(ContractAPIView):
     permission_classes = [IsCentralOfficer]
 
@@ -1810,6 +1876,7 @@ class CentralSummaryView(ContractAPIView):
                     {"stage": stage, "count": count} for stage, count in sorted(stages.items())
                 ],
                 "timing_analytics": central_timing_analytics(queryset),
+                "anonymous_workload": anonymous_workload_analytics(),
             }
         )
 

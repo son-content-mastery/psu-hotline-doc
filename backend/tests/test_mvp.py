@@ -64,6 +64,7 @@ from apps.core.notifications import (
     queue_activation_email,
     queue_license_renewal_reminders,
 )
+from apps.core.views import anonymous_officer_reference
 
 
 def make_pdf(name="document.pdf", content_type="application/pdf", encrypted=False):
@@ -999,6 +1000,53 @@ def test_central_summary_keeps_historical_inactive_authority_totals_consistent(s
     assert sum(item["count"] for item in response.data["by_local_authority"]) == expected_total
     patong = next(item for item in response.data["by_local_authority"] if item["id"] == seeded["patong"].id)
     assert patong["count"] == Application.objects.filter(responsible_authority=seeded["patong"]).count()
+
+
+def test_anonymous_workload_rotates_references_and_suppresses_small_groups(seeded, api_client, settings):
+    settings.ANONYMOUS_WORKLOAD_MIN_GROUP_SIZE = 3
+    api_client.force_authenticate(seeded["central"])
+    suppressed = api_client.get("/api/v1/central/summary/").data["anonymous_workload"]
+    assert suppressed == {
+        "period": timezone.localdate().strftime("%Y-%m"),
+        "minimum_group_size": 3,
+        "contributor_count": None,
+        "suppressed": True,
+        "rows": [],
+    }
+
+    officers = []
+    for index in (2, 3):
+        officers.append(
+            User.objects.create_user(
+                email=f"workload-{index}@example.test",
+                password="pass",
+                display_name=f"Private Officer {index}",
+                role=User.Role.LOCAL_OFFICER,
+                local_authority=seeded["patong"],
+                email_verified_at=timezone.now(),
+            )
+        )
+    documents = list(ApplicationDocument.objects.order_by("id")[:2])
+    for officer, document in zip(officers, documents):
+        DocumentReview.objects.create(
+            application_document=document,
+            reviewer=officer,
+            outcome=DocumentReview.Outcome.APPROVED,
+        )
+
+    workload = api_client.get("/api/v1/central/summary/").data["anonymous_workload"]
+    assert workload["suppressed"] is False
+    assert workload["contributor_count"] == 3
+    assert len(workload["rows"]) == 3
+    assert all(re.fullmatch(r"OFF-[0-9A-F]{8}", row["officer_reference"]) for row in workload["rows"])
+    serialized = str(workload)
+    assert "Private Officer" not in serialized
+    assert "@example.test" not in serialized
+    assert "PATONG" not in serialized
+    assert anonymous_officer_reference(officers[0].pk, "2026-09") != anonymous_officer_reference(
+        officers[0].pk,
+        "2026-10",
+    )
 
 
 def test_database_driven_checklist_and_external_guidance(seeded, api_client):

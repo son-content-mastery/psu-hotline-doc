@@ -315,6 +315,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** average hours/sample counts are returned per non-terminal stage; overdue total and stage counts include the old application; terminal idle time is excluded; and the analytics payload/UI exposes no individual application, applicant, property, officer, or free-text reason.
 
+### TC-35 — Workload references rotate and small groups are suppressed
+
+**Layer:** Backend pseudonym/privacy tests plus central overview component test.
+
+**Given** one reporting period with fewer than three contributors and another fixture with at least three
+
+**When** the central workload summary is generated
+
+**Then** the small group has no rows or exact contributor count; the eligible group shows only monthly rotating `OFF-` references and review/decision counts; changing the period changes a person's reference; and no user ID, name, email, or authority is present.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:
@@ -338,7 +348,7 @@ Capture failures and exact commands/output in the final verification notes. Do n
 
 The Hackathon MVP is ready to demo only when:
 
-- TC-01 through TC-34 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
+- TC-01 through TC-35 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
 - the full end-to-end demo acceptance succeeds on a clean seeded database;
 - Django system checks, backend tests, and the frontend production build pass;
 - permission failures have been exercised with at least two applicants and two different local authorities;

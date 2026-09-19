@@ -114,6 +114,7 @@ Expected settings:
 | `LICENSE_RENEWAL_SCAN_SECONDS` | Interval between renewal scans in the email worker | `3600`; accepted range is 60–86400 seconds. |
 | `EXPECTED_LOCAL_AUTHORITY_COUNT` | Expected configured Phuket authority coverage used to validate central summaries | `19` for the supplied Hackathon scope. |
 | `CENTRAL_OVERDUE_THRESHOLD_DAYS` | Aggregate unusually-old-work threshold | Positive integer from `1` to `365`; default `7`. |
+| `ANONYMOUS_WORKLOAD_MIN_GROUP_SIZE` | Minimum active contributors before workload rows are returned | Integer from `3` to `20`; default `3`. |
 | `DEFAULT_FROM_EMAIL` | Sender identity for password-reset mail | Fictional `example.test` sender locally. |
 | `FRONTEND_BASE_URL` | Trusted base used to build reset links | `http://localhost:5173`; must match the actual browser origin and must not be derived from request headers. |
 | `VITE_API_BASE_URL` | Browser API base | `/api/v1` (relative URL). |
