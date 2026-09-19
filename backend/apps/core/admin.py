@@ -145,7 +145,20 @@ class FeeScheduleAdmin(admin.ModelAdmin):
     list_display = ("property_type", "amount", "currency", "validity_years", "effective_from", "effective_to")
 
     def get_readonly_fields(self, request, obj=None):
-        return tuple(field.name for field in self.model._meta.fields) if obj else ()
+        if not obj:
+            return ()
+        if obj.effective_to is not None:
+            return tuple(field.name for field in self.model._meta.fields)
+        return tuple(field.name for field in self.model._meta.fields if field.name != "effective_to")
+
+    def save_model(self, request, obj, form, change):
+        previous_end = None
+        if change:
+            previous_end = FeeSchedule.objects.filter(pk=obj.pk).values_list("effective_to", flat=True).first()
+        with transaction.atomic():
+            super().save_model(request, obj, form, change)
+            if change and previous_end is None and obj.effective_to is not None:
+                audit_event(actor=request.user, action="FEE_SCHEDULE_CLOSED", obj=obj)
 
     def has_delete_permission(self, request, obj=None):
         return False

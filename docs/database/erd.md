@@ -311,7 +311,7 @@ Property types, document types, and issuing agencies use child translation table
 
 ### Fees are effective-dated and licenses snapshot them
 
-Schedules are append-only/effective-dated master data. `License.artifact_kind` distinguishes a fee-bearing hotel licence from a non-hotel notification acknowledgement. A hotel licence keeps the schedule FK for provenance and amount/currency/validity snapshots for historical reproduction. Those fields and expiry are null for an acknowledgement. The property type FK records the confirmed processing type at issuance. The application-to-artifact relationship is zero-or-one.
+Schedules are append-only/effective-dated master data. Django Admin may close an open schedule by setting only `effective_to`; after closure every field is read-only. A replacement rate is a new row, and closing the prior row creates an immutable audit event. `License.artifact_kind` distinguishes a fee-bearing hotel licence from a non-hotel notification acknowledgement. A hotel licence keeps the schedule FK for provenance and amount/currency/validity snapshots for historical reproduction. Those fields and expiry are null for an acknowledgement. The property type FK records the confirmed processing type at issuance. The application-to-artifact relationship is zero-or-one.
 
 ### Audit is generic but deliberately small
 
