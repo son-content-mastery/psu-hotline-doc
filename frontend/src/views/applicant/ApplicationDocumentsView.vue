@@ -203,12 +203,31 @@ async function upload(item: RequirementItem, files: File[]): Promise<void> {
       version: uploaded.version,
     })
     await loadData(true)
-  } catch {
-    fileErrors[typeId] = 'documents.uploadError'
-    selectedFiles[typeId] = []
+  } catch (caught) {
+    if (caught instanceof ApiError) {
+      const errorKeys: Record<string, string> = {
+        FILE_TOO_LARGE: 'documents.fileSizeError',
+        UNSUPPORTED_FILE_TYPE: 'documents.fileTypeError',
+        MULTIPLE_FILES_NOT_ALLOWED: 'documents.singleFileOnlyError',
+        DOCUMENT_NOT_OPEN_FOR_REVISION: 'documents.uploadStateChanged',
+        APPLICATION_NOT_EDITABLE: 'documents.uploadStateChanged',
+        NOT_FOUND: 'documents.uploadStateChanged',
+      }
+      fileErrors[typeId] = errorKeys[caught.code] ?? 'documents.uploadError'
+      if (['DOCUMENT_NOT_OPEN_FOR_REVISION', 'APPLICATION_NOT_EDITABLE', 'NOT_FOUND'].includes(caught.code)) {
+        await loadData(true, true)
+      }
+    } else {
+      fileErrors[typeId] = 'documents.uploadError'
+    }
   } finally {
     uploadingTypeId.value = null
   }
+}
+
+async function retryUpload(item: RequirementItem): Promise<void> {
+  const files = selectedFiles[item.document_type.id] ?? []
+  if (files.length) await upload(item, files)
 }
 
 async function focusFirstAction(): Promise<void> {
@@ -418,6 +437,17 @@ onMounted(loadData)
                 <p v-if="fileErrors[item.document_type.id]" :id="`file-error-${item.document_type.id}`" class="field-error" role="alert">
                   {{ t(fileErrors[item.document_type.id] ?? '') }}
                 </p>
+                <div v-if="fileErrors[item.document_type.id] && selectedFiles[item.document_type.id]?.length" class="mt-3">
+                  <p class="font-semibold text-slate-700">{{ t('documents.selectionPreserved') }}</p>
+                  <button
+                    type="button"
+                    class="button-secondary mt-3"
+                    :disabled="uploadingTypeId !== null || !canUpload(item)"
+                    @click="retryUpload(item)"
+                  >
+                    {{ t('documents.retryUpload') }}
+                  </button>
+                </div>
               </div>
             </template>
           </RequirementList>

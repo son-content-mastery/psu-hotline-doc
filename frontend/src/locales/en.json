@@ -241,7 +241,10 @@
     "uploadMissing": "Upload missing documents",
     "correctDocuments": "Correct documents",
     "incompleteExplanation": "Required documents must have a current upload before submission.",
-    "refreshConflict": "The checklist changed while you were working. Current data has been loaded."
+    "refreshConflict": "The checklist changed while you were working. Current data has been loaded.",
+    "uploadStateChanged": "This upload is no longer allowed in the current application state. The latest checklist has been loaded.",
+    "selectionPreserved": "Your selected files are still available on this page.",
+    "retryUpload": "Retry this upload"
   },
   "auth": {
     "title": "Sign in",
