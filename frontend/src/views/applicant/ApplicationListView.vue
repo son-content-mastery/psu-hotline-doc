@@ -137,7 +137,13 @@ onMounted(load)
       </InlineAlert>
 
       <ul v-else-if="visibleApplications.length" class="mt-7 grid gap-5 lg:grid-cols-2" role="list">
-        <li v-for="application in visibleApplications" :key="application.id" class="card flex flex-col">
+        <li
+          v-for="application in visibleApplications"
+          :key="application.id"
+          class="card flex flex-col"
+          data-testid="application-card"
+          :data-application-id="application.id"
+        >
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p class="select-all font-extrabold text-brand-800">

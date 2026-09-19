@@ -203,7 +203,12 @@ onMounted(() => load())
 
       <section class="mt-7 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm" :aria-label="t('central.measuresLabel')">
         <div class="grid divide-y divide-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-          <div v-for="counter in counters" :key="counter.key" class="min-h-36 px-5 py-5 sm:px-6">
+          <div
+            v-for="counter in counters"
+            :key="counter.key"
+            class="min-h-36 px-5 py-5 sm:px-6"
+            :data-testid="`central-counter-${counter.key}`"
+          >
             <div class="flex items-center gap-2 text-sm font-bold text-slate-600">
               <span :class="['h-2.5 w-2.5 rounded-full', counterAccentClass(counter.key)]" aria-hidden="true"></span>
               <h2>{{ counter.label }}</h2>

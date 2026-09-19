@@ -388,6 +388,9 @@ onMounted(load)
             <form
               v-if="canReviewDocuments && documentItem.is_current && documentItem.status === 'UPLOADED'"
               class="mt-6 border-t border-slate-200 pt-5"
+              data-testid="document-review-form"
+              :data-document-id="documentItem.id"
+              :data-document-type-id="documentItem.document_type.id"
               @submit.prevent="reviewDocument(documentItem)"
             >
               <fieldset

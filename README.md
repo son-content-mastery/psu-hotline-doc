@@ -98,6 +98,14 @@ npm --prefix frontend run test:run
 npm --prefix frontend run build
 ```
 
+Run the serial browser acceptance suite against a disposable seeded environment:
+
+```bash
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:38124 npm --prefix frontend run test:e2e
+```
+
+The browser suite creates and completes an application. Do not point it at production or a database containing non-demo work. It uses the locally installed Google Chrome channel and reads the demo password from `E2E_DEMO_PASSWORD`, defaulting only for local development to `DemoPass123!`.
+
 ## Demo accounts
 
 The `seed_demo` command creates these fictional accounts. The shared demo password is configured by `DEMO_PASSWORD` and defaults to `DemoPass123!` only in local development.

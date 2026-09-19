@@ -18,7 +18,10 @@ docker compose exec backend pytest
 docker compose exec backend python manage.py check
 docker compose exec frontend npm test -- --run
 docker compose exec frontend npm run build
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:38124 npm --prefix frontend run test:e2e
 ```
+
+The Playwright suite uses the installed desktop Chrome channel and runs serially because the exact demo test mutates workflow state. Point `PLAYWRIGHT_BASE_URL` at a disposable, freshly migrated and seeded environment; do not run it against production or a database containing non-demo work. Browser artifacts are retained only on failure and are ignored by Git.
 
 If frontend tests are not present, record that fact and run the production build plus the manual smoke tests. Do not report a command as passing unless it was actually run.
 
@@ -274,7 +277,7 @@ Capture failures and exact commands/output in the final verification notes. Do n
 
 The Hackathon MVP is ready to demo only when:
 
-- TC-01 through TC-26 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
+- TC-01 through TC-28 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
 - the full end-to-end demo acceptance succeeds on a clean seeded database;
 - Django system checks, backend tests, and the frontend production build pass;
 - permission failures have been exercised with at least two applicants and two different local authorities;

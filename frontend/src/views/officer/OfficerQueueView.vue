@@ -148,7 +148,13 @@ onMounted(() => Promise.all([load(), loadPropertyTypes()]))
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in items" :key="item.id" class="border-t border-slate-200 align-top">
+              <tr
+                v-for="item in items"
+                :key="item.id"
+                class="border-t border-slate-200 align-top"
+                data-testid="officer-queue-row"
+                :data-application-id="item.id"
+              >
                 <th scope="row" class="p-4 font-extrabold">{{ item.reference_number }}</th>
                 <td class="p-4">{{ item.property_name }}</td>
                 <td class="p-4">{{ item.property_type?.name ?? t('central.classificationPending') }}</td>
@@ -173,7 +179,13 @@ onMounted(() => Promise.all([load(), loadPropertyTypes()]))
         </div>
 
         <ul class="mt-7 space-y-4 md:hidden" role="list">
-          <li v-for="item in items" :key="item.id" class="card">
+          <li
+            v-for="item in items"
+            :key="item.id"
+            class="card"
+            data-testid="officer-queue-row"
+            :data-application-id="item.id"
+          >
             <p class="select-all text-lg font-black">{{ item.reference_number }}</p>
             <h2 class="mt-2 text-xl font-black">{{ item.property_name }}</h2>
             <p class="mt-1 text-slate-700">{{ item.property_type?.name ?? t('central.classificationPending') }}</p>
