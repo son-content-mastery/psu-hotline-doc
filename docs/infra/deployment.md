@@ -87,6 +87,7 @@ Expected settings:
 | `MAX_UPLOAD_SIZE_MB` | Upload limit reflected in API/security docs | `10` for the MVP. |
 | `DEMO_PASSWORD` | Password assigned by `seed_demo` to demo accounts | Local/demo only; do not enable demo seeding in production. |
 | `RUN_DEMO_SEED` | Run the idempotent demo seed from the Compose backend entrypoint | `true` for the Hackathon demo; set `false` outside demo environments. |
+| `RUN_MIGRATIONS` | Let this process own schema migrations | `true` only for the backend web service; background workers set `false` and wait for backend health. |
 | `PASSWORD_RESET_THROTTLE_RATE` | Anonymous reset request/confirmation throttle | `5/hour` locally; review with the deployed cache/proxy strategy. |
 | `REGISTRATION_THROTTLE_RATE` | Registration throttle by source | `5/hour`. |
 | `ACTIVATION_THROTTLE_RATE` | Activation/resend throttle by source | `5/hour`. |

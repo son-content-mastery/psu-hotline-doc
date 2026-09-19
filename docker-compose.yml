@@ -36,6 +36,7 @@ services:
       MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-10}
       DEMO_PASSWORD: ${DEMO_PASSWORD:-DemoPass123!}
       RUN_DEMO_SEED: ${RUN_DEMO_SEED:-true}
+      RUN_MIGRATIONS: "true"
       PASSWORD_RESET_THROTTLE_RATE: ${PASSWORD_RESET_THROTTLE_RATE:-5/hour}
       REGISTRATION_THROTTLE_RATE: ${REGISTRATION_THROTTLE_RATE:-5/hour}
       ACTIVATION_THROTTLE_RATE: ${ACTIVATION_THROTTLE_RATE:-5/hour}
@@ -86,11 +87,12 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       RUN_DEMO_SEED: "false"
+      RUN_MIGRATIONS: "false"
     command: ["python", "manage.py", "run_email_outbox_worker"]
     volumes:
       - ./backend:/app
     depends_on:
-      postgres:
+      backend:
         condition: service_healthy
     restart: unless-stopped
 
