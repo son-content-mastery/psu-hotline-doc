@@ -43,6 +43,17 @@ const summary = {
   expected_authority_count: 19,
   authority_zeroes_included: true,
   by_current_stage: [{ stage: 'LOCAL_OFFICER_REVIEW', count: 1 }],
+  timing_analytics: {
+    average_wait_by_stage: [
+      { stage: 'APPLICANT_PREPARATION', average_hours: 12.5, sample_count: 3 },
+      { stage: 'LOCAL_OFFICER_REVIEW', average_hours: 36, sample_count: 2 },
+    ],
+    overdue: {
+      threshold_days: 7,
+      total: 2,
+      by_stage: [{ stage: 'LOCAL_OFFICER_REVIEW', count: 2 }],
+    },
+  },
 }
 
 describe('central overview', () => {
@@ -68,6 +79,9 @@ describe('central overview', () => {
       'Applications by current stage',
     ])
     expect(wrapper.get('#authority-heat-title').text()).toContain('19 local authorities')
+    expect(wrapper.get('#timing-analytics-title').text()).toBe('Waiting time and unusually old work')
+    expect(wrapper.text()).toContain('36 hr')
+    expect(wrapper.text()).toContain('Total unusually old applications')
     expect(wrapper.text()).toContain('Patong Municipality')
     expect(wrapper.findAll('#authority-table tbody tr')).toHaveLength(5)
     expect(

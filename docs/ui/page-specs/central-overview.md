@@ -49,6 +49,10 @@ An accessible schematic heat grid supplements the LocalAuthority table. It uses 
 
 The grid must explicitly say that it is not a geographic boundary map. Do not draw approximate boundaries or call these 19 authorities “19 subdistricts.” A future choropleth requires a validated official GeoJSON/polygon source and a reviewed mapping between stable authority codes and non-overlapping jurisdiction geometry. No third-party chart package is needed for the schematic grid.
 
+## Timing analytics
+
+Show average wait per non-terminal stage with the number of contributing applications, followed by one unusually-old-work total and aggregate stage breakdown using the configured day threshold. Explain that the values come from server status history, are aggregate-only, and are intended to locate process bottlenecks rather than rank officers. Do not link these values to individual cases.
+
 ## Ordering and formatting
 
 - Counters stay in the specified order.

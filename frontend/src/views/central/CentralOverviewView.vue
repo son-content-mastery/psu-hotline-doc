@@ -93,7 +93,9 @@ function isCompleteResponse(value: CentralSummary): boolean {
         Array.isArray(item.by_current_stage),
     ) &&
     value.authority_zeroes_included === true &&
-    Array.isArray(value.by_current_stage)
+    Array.isArray(value.by_current_stage) &&
+    Array.isArray(value.timing_analytics?.average_wait_by_stage) &&
+    typeof value.timing_analytics?.overdue?.total === 'number'
   )
 }
 
@@ -222,6 +224,41 @@ onMounted(() => load())
       </section>
 
       <InlineAlert v-if="isEmpty" tone="info" class="mt-7 max-w-3xl">{{ t('central.empty') }}</InlineAlert>
+
+      <section class="mt-9 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7" aria-labelledby="timing-analytics-title">
+        <div class="max-w-3xl">
+          <p class="text-sm font-black uppercase tracking-wide text-brand-700">{{ t('central.analyticsEyebrow') }}</p>
+          <h2 id="timing-analytics-title" class="mt-2 text-2xl font-black text-slate-950">{{ t('central.analyticsTitle') }}</h2>
+          <p class="mt-3 text-slate-700">{{ t('central.analyticsIntro') }}</p>
+        </div>
+        <div class="mt-6 grid gap-5 lg:grid-cols-2">
+          <div class="rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-lg font-black">{{ t('central.averageWaitTitle') }}</h3>
+            <p v-if="summary.timing_analytics.average_wait_by_stage.length === 0" class="mt-3 text-slate-600">{{ t('central.analyticsEmpty') }}</p>
+            <dl v-else class="mt-4 space-y-4">
+              <div v-for="item in summary.timing_analytics.average_wait_by_stage" :key="item.stage" class="flex items-start justify-between gap-5 border-t border-slate-100 pt-4 first:border-0 first:pt-0">
+                <dt>
+                  <span class="font-bold">{{ t(stageKey(item.stage)) }}</span>
+                  <span class="mt-1 block text-sm text-slate-600">{{ t('central.analyticsSamples', { count: item.sample_count }) }}</span>
+                </dt>
+                <dd class="text-right text-xl font-black">{{ t('central.averageHours', { hours: formatNumber(item.average_hours, locale) }) }}</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-lg font-black">{{ t('central.overdueTitle', { days: summary.timing_analytics.overdue.threshold_days }) }}</h3>
+            <p class="mt-3 text-4xl font-black text-amber-800">{{ formatNumber(summary.timing_analytics.overdue.total, locale) }}</p>
+            <p class="mt-1 text-sm font-semibold text-slate-600">{{ t('central.overdueCount') }}</p>
+            <ul v-if="summary.timing_analytics.overdue.by_stage.length" class="mt-4 space-y-2" role="list">
+              <li v-for="item in summary.timing_analytics.overdue.by_stage" :key="item.stage" class="flex justify-between gap-4">
+                <span>{{ t(stageKey(item.stage)) }}</span>
+                <strong>{{ formatNumber(item.count, locale) }}</strong>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <p class="mt-5 text-sm text-slate-600">{{ t('central.analyticsPrivacy') }}</p>
+      </section>
 
       <section class="mt-9 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-7" aria-labelledby="authority-heat-title">
         <div class="max-w-3xl">

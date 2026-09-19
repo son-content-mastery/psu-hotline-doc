@@ -433,6 +433,18 @@ export interface CentralSummary {
   expected_authority_count: number
   authority_zeroes_included: boolean
   by_current_stage: CentralStageItem[]
+  timing_analytics: {
+    average_wait_by_stage: Array<{
+      stage: string
+      average_hours: number
+      sample_count: number
+    }>
+    overdue: {
+      threshold_days: number
+      total: number
+      by_stage: CentralStageItem[]
+    }
+  }
 }
 
 export interface License {

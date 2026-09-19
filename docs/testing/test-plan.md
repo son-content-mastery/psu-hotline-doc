@@ -305,6 +305,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** only the local officer succeeds; relevant structured cases and FAQs are returned; case references are pseudonymous; and no application/property ID, applicant, property name, address, authority, application reference, filename, free-text reason, or document content appears in the response or UI.
 
+### TC-34 — Central timing analytics are history-derived and aggregate-only
+
+**Layer:** Backend time/history aggregation tests plus central overview component test.
+
+**Given** applications with status-history intervals and one non-terminal application older than the configured threshold
+
+**When** a central officer opens the overview
+
+**Then** average hours/sample counts are returned per non-terminal stage; overdue total and stage counts include the old application; terminal idle time is excluded; and the analytics payload/UI exposes no individual application, applicant, property, officer, or free-text reason.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:
@@ -328,7 +338,7 @@ Capture failures and exact commands/output in the final verification notes. Do n
 
 The Hackathon MVP is ready to demo only when:
 
-- TC-01 through TC-33 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
+- TC-01 through TC-34 pass at their stated layers or any explicit, justified manual-only exceptions are recorded;
 - the full end-to-end demo acceptance succeeds on a clean seeded database;
 - Django system checks, backend tests, and the frontend production build pass;
 - permission failures have been exercised with at least two applicants and two different local authorities;

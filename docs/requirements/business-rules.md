@@ -229,6 +229,8 @@ All restrictions are enforced in backend querysets/object permissions/domain fun
 - “Approved” counts `APPROVED`.
 - Breakdowns group by confirmed property type, responsible local authority, and current status/stage, including an explicit “unconfirmed” bucket where appropriate.
 - Central data is read-only in the MVP and contains only fields necessary for aggregates.
+- Average stage waits are derived from application creation/status-history intervals and exclude time after terminal completion.
+- “Unusually old” means the current non-terminal stage has not changed for at least `CENTRAL_OVERDUE_THRESHOLD_DAYS` (seven by default). The result is an aggregate count and stage breakdown, not an individual case list.
 
 ## 14. Demo-data and Privacy Rules
 

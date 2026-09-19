@@ -115,7 +115,7 @@ The backend owns:
 - backend-generated references, fees, and licenses;
 - opaque-token public licence verification and server-generated QR images with an allow-listed response;
 - transactions, status history, and immutable audit records;
-- aggregate central reporting; and
+- aggregate central reporting with history-derived stage timing and unusually-old-work signals; and
 - applicant registration, signed email activation, transactional email outbox creation; and
 - Django Admin for Super Admin/master-data work.
 

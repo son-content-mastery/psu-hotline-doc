@@ -1289,6 +1289,8 @@ For a non-hotel notification, `artifact_kind` is `NOTIFICATION_ACKNOWLEDGEMENT`,
 
 `by_local_authority` contains every active configured LocalAuthority, including zero-count rows, so an overview never confuses an omitted area with zero. Each row includes aggregate-only totals and type/stage breakdowns for an inline area-detail panel; it never contains applicant, property-address, document, reason, or individual application identifiers. The array is master-data order; clients may additionally rank it for a table or heat grid.
 
+`timing_analytics.average_wait_by_stage` contains `stage`, `average_hours`, and `sample_count` derived from status-history intervals. `timing_analytics.overdue` contains the configured `threshold_days`, aggregate `total`, and `by_stage` counts for non-terminal applications whose current stage age meets the threshold. It contains no individual case or officer data.
+
 **Important errors:** `401 AUTHENTICATION_REQUIRED`; `403 PERMISSION_DENIED`. Empty application data returns zero totals, empty type/stage groups, and all active authority rows with zero counts rather than `404`.
 
 ---

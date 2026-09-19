@@ -120,6 +120,12 @@ For externally issued items, show database-managed issuing agency, applicable re
 - Case references are stable salted pseudonyms. Results show only decision, structured classification snapshots, revision/document-review counts, and elapsed days.
 - Bilingual FAQs are database master data maintained by Super Admin. Case matches and FAQs are advisory and never replace review of the current evidence and applicable rules.
 
+### S5A — Advanced Central Timing Analytics (implemented optional capability)
+
+- Derive average elapsed hours per non-terminal workflow stage from immutable server-timestamped status history; do not accept timing input from clients.
+- Report the count of applications that have remained in their current stage for at least a configurable threshold (seven days by default), with an aggregate stage breakdown.
+- Return no individual application, applicant, property, officer, or free-text details in timing analytics. These metrics identify process bottlenecks and do not rank people.
+
 ### M11 — Minimal Central Overview
 
 - Show total, waiting review, waiting for applicant revision, and approved counts.
@@ -182,7 +188,7 @@ The demo is successful only if applicant ownership, officer authority scoping, s
 Do not implement these until the complete Must Have flow is working:
 
 - full OCR or advanced AI document understanding;
-- advanced analytics or officer productivity reports;
+- individual officer productivity reports outside the pseudonymous S6 rules;
 - backup-management UI;
 - discussion/chat;
 - service-provider marketplace;

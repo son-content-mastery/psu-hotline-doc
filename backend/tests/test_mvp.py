@@ -943,7 +943,10 @@ def test_domain_services_recheck_scope_after_lock(seeded):
     assert exc_info.value.code == "NOT_FOUND"
 
 
-def test_central_summary_is_aggregate_only_and_role_separated(seeded, api_client):
+def test_central_summary_is_aggregate_only_and_role_separated(seeded, api_client, settings):
+    settings.CENTRAL_OVERDUE_THRESHOLD_DAYS = 7
+    old_draft = Application.objects.filter(status=Application.Status.DRAFT).first()
+    Application.objects.filter(pk=old_draft.pk).update(updated_at=timezone.now() - timedelta(days=8))
     expected_total = Application.objects.count()
     expected_waiting = Application.objects.filter(
         status__in=[Application.Status.SUBMITTED, Application.Status.UNDER_REVIEW, Application.Status.RESUBMITTED]
@@ -963,6 +966,14 @@ def test_central_summary_is_aggregate_only_and_role_separated(seeded, api_client
     assert response.data["authority_count"] == len(response.data["by_local_authority"])
     assert response.data["expected_authority_count"] == 19
     assert len(response.data["by_local_authority"]) == LocalAuthority.objects.filter(is_active=True).count()
+    analytics = response.data["timing_analytics"]
+    assert analytics["overdue"]["threshold_days"] == 7
+    assert analytics["overdue"]["total"] >= 1
+    assert any(item["stage"] == "APPLICANT_PREPARATION" for item in analytics["overdue"]["by_stage"])
+    assert all(
+        set(item) == {"stage", "average_hours", "sample_count"}
+        for item in analytics["average_wait_by_stage"]
+    )
     assert all(item["count"] > 0 for item in response.data["by_local_authority"])
     for item in response.data["by_local_authority"]:
         assert item["totals"]["applications"] == item["count"]

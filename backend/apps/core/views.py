@@ -1635,6 +1635,67 @@ class OfficerRejectView(ContractAPIView):
         )
 
 
+def central_timing_analytics(queryset):
+    now = timezone.now()
+    total_seconds = defaultdict(float)
+    sample_counts = Counter()
+    overdue_by_stage = Counter()
+    overdue_threshold = timedelta(days=settings.CENTRAL_OVERDUE_THRESHOLD_DAYS)
+
+    for application in queryset.prefetch_related("status_history"):
+        events = list(application.status_history.all())
+        stage_seconds = defaultdict(float)
+        if events:
+            interval_start = application.created_at
+            interval_status = Application.Status.DRAFT
+            for event in events:
+                interval_end = min(event.created_at, now)
+                if interval_end > interval_start:
+                    stage = current_stage(interval_status)
+                    if stage != "COMPLETED":
+                        stage_seconds[stage] += (interval_end - interval_start).total_seconds()
+                interval_start = event.created_at
+                interval_status = event.to_status
+            interval_status = application.status
+        else:
+            interval_status = application.status
+            interval_start = application.submitted_at or application.updated_at
+
+        if current_stage(interval_status) != "COMPLETED" and now > interval_start:
+            stage_seconds[current_stage(interval_status)] += (now - interval_start).total_seconds()
+        for stage, seconds in stage_seconds.items():
+            total_seconds[stage] += seconds
+            sample_counts[stage] += 1
+
+        active_stage = current_stage(application.status)
+        if active_stage != "COMPLETED":
+            waiting_start = events[-1].created_at if events else (application.submitted_at or application.updated_at)
+            if now - waiting_start >= overdue_threshold:
+                overdue_by_stage[active_stage] += 1
+
+    stage_order = ["APPLICANT_PREPARATION", "LOCAL_OFFICER_REVIEW", "APPLICANT_ACTION"]
+    return {
+        "average_wait_by_stage": [
+            {
+                "stage": stage,
+                "average_hours": round(total_seconds[stage] / sample_counts[stage] / 3600, 1),
+                "sample_count": sample_counts[stage],
+            }
+            for stage in stage_order
+            if sample_counts[stage]
+        ],
+        "overdue": {
+            "threshold_days": settings.CENTRAL_OVERDUE_THRESHOLD_DAYS,
+            "total": sum(overdue_by_stage.values()),
+            "by_stage": [
+                {"stage": stage, "count": overdue_by_stage[stage]}
+                for stage in stage_order
+                if overdue_by_stage[stage]
+            ],
+        },
+    }
+
+
 class CentralSummaryView(ContractAPIView):
     permission_classes = [IsCentralOfficer]
 
@@ -1748,6 +1809,7 @@ class CentralSummaryView(ContractAPIView):
                 "by_current_stage": [
                     {"stage": stage, "count": count} for stage, count in sorted(stages.items())
                 ],
+                "timing_analytics": central_timing_analytics(queryset),
             }
         )
 
