@@ -15,7 +15,7 @@ This remains a compact application overview, not a complex analytics dashboard. 
 3. One filter for needs action, in progress, completed, or all.
 4. Application cards ordered with actionable work first and recent updates next.
 
-Each card shows reference state, accommodation name, localized status, database-provided property type, responsible LocalAuthority, last update, and one next-step action. Draft/ready/revision cards also show current document progress and a plain-language next step. Color and icons supplement but never replace status text.
+Each card shows reference state, accommodation name, localized status, database-provided property type, responsible LocalAuthority, last update, and one next-step primary action. Draft/ready/revision cards also show current document progress, a plain-language next step, and a secondary action to edit accommodation details. Draft/ready editing may update the responsible authority and classification answers; revision editing keeps those two workflow-routing inputs locked. The server re-evaluates classification and the checklist after eligible answer changes. Color and icons supplement but never replace status text.
 
 ## API data
 

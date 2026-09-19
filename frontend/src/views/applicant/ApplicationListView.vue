@@ -182,6 +182,13 @@ onMounted(load)
           <RouterLink class="button-primary mt-5 lg:mt-auto lg:pt-3" :to="actionRoute(application)">
             {{ actionLabel(application) }}
           </RouterLink>
+          <RouterLink
+            v-if="['DRAFT', 'READY_TO_SUBMIT', 'REVISION_REQUIRED'].includes(application.status)"
+            class="button-secondary mt-3"
+            :to="{ name: 'application-edit', params: { id: application.id } }"
+          >
+            {{ t('application.edit') }}
+          </RouterLink>
         </li>
       </ul>
     </template>

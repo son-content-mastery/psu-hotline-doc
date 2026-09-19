@@ -98,6 +98,12 @@ const router = createRouter({
       meta: { titleKey: 'routes.documents', requiresAuth: true, roles: ['APPLICANT'] },
     },
     {
+      path: '/applications/:id(\\d+)/edit',
+      name: 'application-edit',
+      component: () => import('@/views/applicant/ApplicationEditView.vue'),
+      meta: { titleKey: 'routes.applicationEdit', requiresAuth: true, roles: ['APPLICANT'] },
+    },
+    {
       path: '/applications/:id(\\d+)/review',
       name: 'application-review',
       component: () => import('@/views/applicant/ApplicationReviewView.vue'),

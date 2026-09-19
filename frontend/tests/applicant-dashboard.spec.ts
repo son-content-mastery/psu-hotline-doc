@@ -65,6 +65,7 @@ describe('applicant dashboard', () => {
         { path: '/applications', name: 'application-list', component: ApplicationListView },
         { path: '/classification/:step', name: 'classification-step', component: Page },
         { path: '/applications/:id/documents', name: 'application-documents', component: Page },
+        { path: '/applications/:id/edit', name: 'application-edit', component: Page },
         { path: '/applications/:id/review', name: 'application-review', component: Page },
         { path: '/applications/:id/tracking', name: 'application-tracking', component: Page },
       ],
@@ -86,6 +87,7 @@ describe('applicant dashboard', () => {
     expect(wrapper.text()).toContain('Welcome, Demo applicant')
     expect(wrapper.text()).toContain('Patong Municipality')
     expect(wrapper.text()).toContain('Current documents: 2 of 5 required')
+    expect(wrapper.text()).toContain('Edit accommodation details')
     expect(wrapper.text()).not.toContain('Approved stay')
 
     await wrapper.get('select#application-filter').setValue('all')
