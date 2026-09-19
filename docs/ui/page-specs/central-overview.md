@@ -37,7 +37,7 @@ A simple table with localized property type and application count. Unknown/unres
 
 ### By LocalAuthority
 
-A simple table with LocalAuthority name and application count. The 19 seeded Phuket authorities are master data from the backend; do not hardcode their names or assume every authority has a nonzero row. The API decides whether zero-count authorities are included, and the UI states the convention.
+A simple table with LocalAuthority name and application count. To prevent the overview from becoming a long wall of rows, show the top five ranked authorities by default and provide an explicit **ดูเพิ่มเติม** / **View more** control with an icon and remaining-count text. Expanding reveals the rest; collapsing returns to the preview. The 19 seeded Phuket authorities are master data from the backend; do not hardcode their names or assume every authority has a nonzero row. The API decides whether zero-count authorities are included, and the UI states the convention.
 
 ### By current stage
 
@@ -45,7 +45,7 @@ A simple table with localized human-readable stage and count. Raw application st
 
 Optional horizontal bars may supplement each table when they improve scanning. Every bar must also display its category and exact value as text; tables remain available as the authoritative readable view.
 
-An accessible schematic heat grid supplements the LocalAuthority table. It contains one labelled button tile per active configured authority, includes zero-count authorities, shows the exact value in text, and uses color intensity only as a redundant cue. Activating a tile opens an inline aggregate panel with the area's four totals plus breakdowns by property type and current stage. The panel contains no applicant data, application identifiers, or links to individual records. Selection and expansion state are programmatically exposed, focus moves to the detail heading when opened, and closing returns focus to the originating tile.
+An accessible schematic heat grid supplements the LocalAuthority table. It uses a light, restrained surface rather than a dark dashboard slab, and contains one labelled button tile per active configured authority. Tiles include zero-count authorities, show the exact value in text, and use color intensity only as a redundant cue. Activating a tile opens a modal aggregate panel with the area's four totals plus breakdowns by property type and current stage. The modal contains no applicant data, application identifiers, or links to individual records. It can be closed with its button, Escape, or the backdrop; focus moves to its heading when opened, stays within the modal, and returns to the originating tile when closed.
 
 The grid must explicitly say that it is not a geographic boundary map. Do not draw approximate boundaries or call these 19 authorities “19 subdistricts.” A future choropleth requires a validated official GeoJSON/polygon source and a reviewed mapping between stable authority codes and non-overlapping jurisdiction geometry. No third-party chart package is needed for the schematic grid.
 
@@ -84,20 +84,20 @@ During refresh, retain the prior numbers, mark them as the previous snapshot, an
 
 ## Responsive and accessible presentation
 
-- On wide screens, four counters may form a simple grid; at phone widths they stack or form a readable two-column grid without reordering.
+- Present the four counters as one compact summary strip with subtle semantic markers and typographic hierarchy, rather than four visually competing promotional cards. At phone widths they stack or form a readable two-column grid without reordering.
 - Breakdown sections stack vertically in the specified order.
 - Tables have captions and scoped column headers. Numeric columns have clear headings and remain text-readable at 200% zoom.
 - If a table needs horizontal scrolling at a very narrow width, place it in a labelled scroll region; prefer a two-column table that naturally fits.
 - Bars are decorative supplements and hidden from assistive technology when the same values are in the table.
 - Refresh status uses a polite live region; errors use an alert when immediate attention is required.
 - Focus remains on the refresh button during routine refresh and receives a concise completion announcement rather than jumping to the top.
-- Heat tiles are native buttons. The selected tile is understandable without color, and opening/closing aggregate detail follows a predictable focus path.
+- Heat tiles are native buttons. The selected tile is understandable without color, and opening/closing the modal aggregate detail follows a predictable focus path.
 
 ## Acceptance criteria
 
 1. Only an authorized Central Officer can retrieve and view the overview.
 2. The four required counters appear first, in the specified order, using backend aggregates.
-3. Breakdowns by property type, LocalAuthority, and current stage are present as simple readable tables.
+3. Breakdowns by property type, LocalAuthority, and current stage are present as simple readable tables; the LocalAuthority table defaults to a five-row preview with a keyboard-operable view-more control.
 4. No complex BI chart, unvalidated geographic map, third-party visualization dependency, or individual decision action is present; the schematic heat grid and its clickable area detail remain aggregate-only and text-readable.
 5. No applicant or individual-application data is exposed.
 6. Raw type/status codes never appear; missing translations use safe localized fallback.

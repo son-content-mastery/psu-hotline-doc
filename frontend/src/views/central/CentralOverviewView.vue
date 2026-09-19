@@ -17,6 +17,9 @@ const stale = ref(false)
 const incomplete = ref(false)
 const refreshAnnouncement = ref('')
 const selectedAuthorityId = ref<number | null>(null)
+const showAllAuthorities = ref(false)
+const authorityPreviewLimit = 5
+const dialogElement = ref<HTMLElement | null>(null)
 
 const counters = computed(() => {
   if (!summary.value) return []
@@ -36,6 +39,10 @@ const sortedAuthorities = computed(() =>
     (a, b) => b.count - a.count || a.name.localeCompare(b.name, locale.value),
   ),
 )
+const visibleAuthorities = computed(() =>
+  showAllAuthorities.value ? sortedAuthorities.value : sortedAuthorities.value.slice(0, authorityPreviewLimit),
+)
+const remainingAuthorityCount = computed(() => Math.max(0, sortedAuthorities.value.length - authorityPreviewLimit))
 const isEmpty = computed(() => summary.value?.totals.applications === 0)
 const maxAuthorityCount = computed(() =>
   Math.max(0, ...(summary.value?.by_local_authority.map((item) => item.count) ?? [0])),
@@ -47,20 +54,20 @@ const selectedAuthority = computed(
 function heatClass(count: number): string {
   if (count === 0 || maxAuthorityCount.value === 0) return 'border-dashed border-slate-400 bg-white text-slate-800'
   const level = Math.max(1, Math.ceil((count / maxAuthorityCount.value) * 4))
-  if (level === 1) return 'border-brand-100 bg-brand-50 text-brand-900'
-  if (level === 2) return 'border-brand-600 bg-brand-100 text-brand-900'
-  if (level === 3) return 'border-brand-700 bg-brand-600 text-white'
-  return 'border-brand-900 bg-brand-800 text-white'
+  if (level === 1) return 'border-sky-200 bg-sky-50 text-slate-900'
+  if (level === 2) return 'border-sky-300 bg-sky-100 text-slate-950'
+  if (level === 3) return 'border-teal-400 bg-teal-100 text-slate-950'
+  return 'border-teal-600 bg-teal-700 text-white'
 }
 
-function counterClass(key: string): string {
+function counterAccentClass(key: string): string {
   const classes: Record<string, string> = {
-    applications: 'border-l-brand-800',
-    waiting_review: 'border-l-sky-700',
-    waiting_revision: 'border-l-amber-700',
-    approved: 'border-l-emerald-700',
+    applications: 'bg-brand-700',
+    waiting_review: 'bg-sky-600',
+    waiting_revision: 'bg-amber-500',
+    approved: 'bg-emerald-600',
   }
-  return classes[key] ?? 'border-l-slate-500'
+  return classes[key] ?? 'bg-slate-500'
 }
 
 function barWidth(count: number, values: Array<{ count: number }>): string {
@@ -125,7 +132,7 @@ function propertyLabel(item: CentralSummary['by_property_type'][number]): string
 async function selectAuthority(authorityId: number): Promise<void> {
   selectedAuthorityId.value = authorityId
   await nextTick()
-  document.getElementById('authority-detail-heading')?.focus()
+  document.getElementById('authority-dialog-heading')?.focus()
 }
 
 async function closeAuthorityDetails(): Promise<void> {
@@ -134,6 +141,30 @@ async function closeAuthorityDetails(): Promise<void> {
   await nextTick()
   if (previousAuthorityId !== null) {
     document.getElementById(`authority-tile-${previousAuthorityId}`)?.focus()
+  }
+}
+
+function handleDialogKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    void closeAuthorityDetails()
+    return
+  }
+  if (event.key !== 'Tab' || !dialogElement.value) return
+  const focusable = Array.from(
+    dialogElement.value.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => !element.hasAttribute('hidden'))
+  if (!focusable.length) return
+  const first = focusable.at(0)
+  const last = focusable.at(-1)
+  if (!first || !last) return
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
   }
 }
 
@@ -170,80 +201,99 @@ onMounted(() => load())
         {{ t('central.stale', { date: formatDate(summary.generated_at, locale) }) }}
       </InlineAlert>
 
-      <section class="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" :aria-label="t('central.measuresLabel')">
-        <div v-for="counter in counters" :key="counter.key" :class="['card border-l-8', counterClass(counter.key)]">
-          <p class="text-4xl font-black text-brand-800">{{ formatNumber(counter.value, locale) }}</p>
-          <h2 class="mt-2 text-lg font-bold">{{ counter.label }}</h2>
+      <section class="mt-7 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm" :aria-label="t('central.measuresLabel')">
+        <div class="grid divide-y divide-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+          <div v-for="counter in counters" :key="counter.key" class="min-h-36 px-5 py-5 sm:px-6">
+            <div class="flex items-center gap-2 text-sm font-bold text-slate-600">
+              <span :class="['h-2.5 w-2.5 rounded-full', counterAccentClass(counter.key)]" aria-hidden="true"></span>
+              <h2>{{ counter.label }}</h2>
+            </div>
+            <p class="mt-4 text-4xl font-black tracking-tight text-slate-950">{{ formatNumber(counter.value, locale) }}</p>
+          </div>
         </div>
       </section>
 
       <InlineAlert v-if="isEmpty" tone="info" class="mt-7 max-w-3xl">{{ t('central.empty') }}</InlineAlert>
 
-      <section class="mt-9 rounded-3xl bg-slate-900 p-5 text-white sm:p-7" aria-labelledby="authority-heat-title">
+      <section class="mt-9 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-7" aria-labelledby="authority-heat-title">
         <div class="max-w-3xl">
-          <p class="text-sm font-bold uppercase tracking-wide text-brand-100">{{ t('central.heatEyebrow') }}</p>
-          <h2 id="authority-heat-title" class="mt-2 text-2xl font-black text-white sm:text-3xl">
+          <p class="text-sm font-black uppercase tracking-wide text-brand-700">{{ t('central.heatEyebrow') }}</p>
+          <h2 id="authority-heat-title" class="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
             {{ t('central.heatTitle') }}
           </h2>
-          <p class="mt-3 text-slate-200">{{ t('central.heatIntro') }}</p>
+          <p class="mt-3 text-slate-700">{{ t('central.heatIntro') }}</p>
+          <p class="mt-2 text-sm font-semibold text-slate-600">{{ t('central.heatSelectPrompt') }}</p>
         </div>
-        <div class="mt-6 flex flex-wrap items-center gap-3 text-sm font-semibold" :aria-label="t('central.heatLegend')">
+        <div class="mt-6 flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-700" :aria-label="t('central.heatLegend')">
           <span>{{ t('central.heatLow') }}</span>
-          <span class="h-6 w-8 rounded border border-brand-100 bg-brand-50" aria-hidden="true"></span>
-          <span class="h-6 w-8 rounded border border-brand-600 bg-brand-100" aria-hidden="true"></span>
-          <span class="h-6 w-8 rounded border border-brand-700 bg-brand-600" aria-hidden="true"></span>
-          <span class="h-6 w-8 rounded border border-brand-900 bg-brand-800" aria-hidden="true"></span>
+          <span class="h-5 w-7 rounded border border-sky-200 bg-sky-50" aria-hidden="true"></span>
+          <span class="h-5 w-7 rounded border border-sky-300 bg-sky-100" aria-hidden="true"></span>
+          <span class="h-5 w-7 rounded border border-teal-400 bg-teal-100" aria-hidden="true"></span>
+          <span class="h-5 w-7 rounded border border-teal-600 bg-teal-700" aria-hidden="true"></span>
           <span>{{ t('central.heatHigh') }}</span>
           <span class="ml-2 rounded border border-dashed border-slate-300 bg-white px-2 py-1 text-slate-900">0</span>
         </div>
-        <ol class="mt-6 grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-3" role="list">
+        <ol class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" role="list">
           <li v-for="authority in summary.by_local_authority" :key="authority.id">
             <button
               :id="`authority-tile-${authority.id}`"
               type="button"
               :class="[
-                'min-h-32 w-full rounded-2xl border-2 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-amber-400',
+                'relative min-h-36 w-full rounded-2xl border p-4 pr-10 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
                 heatClass(authority.count),
-                selectedAuthorityId === authority.id ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-slate-900' : '',
+                selectedAuthorityId === authority.id ? 'ring-2 ring-sky-700 ring-offset-2' : '',
               ]"
-              :aria-expanded="selectedAuthorityId === authority.id"
-              aria-controls="authority-detail"
+              aria-controls="authority-detail-dialog"
+              aria-haspopup="dialog"
               :aria-label="t('central.heatAction', { name: authority.name, count: authority.count })"
               @click="selectAuthority(authority.id)"
             >
-              <span class="block text-3xl font-black">{{ formatNumber(authority.count, locale) }}</span>
-              <span class="mt-2 block font-bold leading-snug">{{ authority.name }}</span>
-              <span class="mt-2 block text-sm font-semibold">{{ t('central.heatApplications', { count: authority.count }) }}</span>
-              <span class="mt-3 inline-flex items-center gap-1 text-sm font-black underline underline-offset-4">
-                {{ t('central.viewArea') }}
-                <span aria-hidden="true">→</span>
+              <span class="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/70 text-current" aria-hidden="true">
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m7 4 6 6-6 6" />
+                </svg>
               </span>
+              <span class="block text-3xl font-black">{{ formatNumber(authority.count, locale) }}</span>
+              <span class="mt-3 block font-bold leading-snug">{{ authority.name }}</span>
+              <span class="mt-2 block text-sm font-semibold opacity-80">{{ t('central.heatApplications', { count: authority.count }) }}</span>
             </button>
           </li>
         </ol>
-        <p class="mt-5 text-sm text-slate-200">{{ t('central.heatBoundaryNote') }}</p>
+        <p class="mt-5 text-sm text-slate-600">{{ t('central.heatBoundaryNote') }}</p>
       </section>
 
-      <section
-        v-if="selectedAuthority"
-        id="authority-detail"
-        class="mt-6 rounded-3xl border-2 border-sky-700 bg-sky-50 p-5 sm:p-7"
-        aria-labelledby="authority-detail-heading"
-      >
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div class="max-w-3xl">
+      <Teleport to="body">
+        <div
+          v-if="selectedAuthority"
+          class="fixed inset-0 z-50 flex items-end bg-slate-950/35 p-3 backdrop-blur-[1px] sm:items-center sm:justify-center sm:p-6"
+          @click.self="closeAuthorityDetails"
+        >
+          <section
+            id="authority-detail-dialog"
+            ref="dialogElement"
+            class="max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-7"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="authority-dialog-heading"
+            @keydown="handleDialogKeydown"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div class="max-w-3xl">
             <p class="text-sm font-black uppercase tracking-wide text-sky-800">{{ t('central.detailEyebrow') }}</p>
-            <h2 id="authority-detail-heading" tabindex="-1" class="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
-              {{ selectedAuthority.name }}
-            </h2>
-            <p class="mt-2 text-slate-700">{{ t('central.detailIntro') }}</p>
-          </div>
-          <button type="button" class="button-secondary" @click="closeAuthorityDetails">
-            {{ t('central.closeDetail') }}
-          </button>
-        </div>
+                <h2 id="authority-dialog-heading" tabindex="-1" class="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
+                  {{ selectedAuthority.name }}
+                </h2>
+                <p class="mt-2 text-slate-700">{{ t('central.detailIntro') }}</p>
+              </div>
+              <button id="close-authority-dialog" type="button" class="button-secondary" @click="closeAuthorityDetails">
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="m5 5 10 10M15 5 5 15" />
+                </svg>
+                {{ t('central.closeDetail') }}
+              </button>
+            </div>
 
-        <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" :aria-label="t('central.detailMeasures')">
+            <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" :aria-label="t('central.detailMeasures')">
           <div class="rounded-2xl border border-slate-300 bg-white p-4">
             <p class="text-3xl font-black text-brand-800">{{ formatNumber(selectedAuthority.totals.applications, locale) }}</p>
             <p class="mt-1 font-bold">{{ t('central.totals.applications') }}</p>
@@ -260,9 +310,9 @@ onMounted(() => load())
             <p class="text-3xl font-black text-emerald-800">{{ formatNumber(selectedAuthority.totals.approved, locale) }}</p>
             <p class="mt-1 font-bold">{{ t('central.totals.approved') }}</p>
           </div>
-        </div>
+            </div>
 
-        <div class="mt-6 grid gap-6 lg:grid-cols-2">
+            <div class="mt-6 grid gap-6 lg:grid-cols-2">
           <section class="rounded-2xl border border-slate-300 bg-white p-5" :aria-labelledby="`authority-types-${selectedAuthority.id}`">
             <h3 :id="`authority-types-${selectedAuthority.id}`" class="text-xl font-black">{{ t('central.detailTypes') }}</h3>
             <ul v-if="selectedAuthority.by_property_type.length" class="mt-3 divide-y divide-slate-200" role="list">
@@ -284,8 +334,10 @@ onMounted(() => load())
             </ul>
             <p v-else class="mt-3 text-slate-600">{{ t('central.detailEmpty') }}</p>
           </section>
+            </div>
+          </section>
         </div>
-      </section>
+      </Teleport>
 
       <div class="mt-9 grid gap-7 xl:grid-cols-2">
         <section class="rounded-3xl border border-slate-300 bg-white p-5 sm:p-7">
@@ -312,8 +364,37 @@ onMounted(() => load())
         </section>
 
         <section class="rounded-3xl border border-slate-300 bg-white p-5 sm:p-7">
-          <table class="w-full border-collapse text-left">
-            <caption class="mb-4 text-left text-2xl font-black">{{ t('central.authorityCaption') }}</caption>
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 class="text-2xl font-black">{{ t('central.authorityCaption') }}</h2>
+              <p class="mt-1 text-sm text-slate-600">
+                {{ t('central.authorityPreview', { shown: visibleAuthorities.length, total: sortedAuthorities.length }) }}
+              </p>
+            </div>
+            <button
+              v-if="remainingAuthorityCount"
+              id="authority-list-toggle"
+              type="button"
+              class="button-secondary"
+              :aria-expanded="showAllAuthorities"
+              aria-controls="authority-table"
+              @click="showAllAuthorities = !showAllAuthorities"
+            >
+              <span>{{ t(showAllAuthorities ? 'central.showFewerAuthorities' : 'central.showMoreAuthorities', { count: remainingAuthorityCount }) }}</span>
+              <svg
+                :class="['h-5 w-5 transition-transform', showAllAuthorities ? 'rotate-180' : '']"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="m5 7 5 5 5-5" />
+              </svg>
+            </button>
+          </div>
+          <table id="authority-table" class="mt-5 w-full border-collapse text-left">
+            <caption class="sr-only">{{ t('central.authorityCaption') }}</caption>
             <thead>
               <tr class="border-b-2 border-slate-300">
                 <th scope="col" class="py-3 pr-3">{{ t('central.category') }}</th>
@@ -321,7 +402,7 @@ onMounted(() => load())
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in sortedAuthorities" :key="item.id" class="border-b border-slate-200">
+              <tr v-for="item in visibleAuthorities" :key="item.id" class="border-b border-slate-200">
                 <th scope="row" class="py-3 pr-3 font-semibold">{{ item.name }}</th>
                 <td class="py-3 text-right font-bold">{{ formatNumber(item.count, locale) }}</td>
               </tr>

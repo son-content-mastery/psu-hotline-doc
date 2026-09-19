@@ -222,7 +222,7 @@ If frontend tests are not present, record that fact and run the production build
 
 **Given** applicant applications in actionable, in-progress, and completed states and central aggregates across configured authorities  
 **When** the applicant or central officer opens their overview  
-**Then** applicant identity/action grouping, property type, responsible authority, and document progress are readable; all 19 configured authority rows are returned including zero counts when present; the heat grid shows exact text values and a non-geographic disclaimer; activating a tile opens only aggregate totals/type/stage detail with keyboard focus moved to its heading; and neither view relies on color alone or exposes another applicant's data.
+**Then** applicant identity/action grouping, property type, responsible authority, and document progress are readable; all 19 configured authority rows are returned including zero counts when present; the LocalAuthority table initially shows five ranked rows and expands/collapses with a keyboard-operable view-more control; the light-surface heat grid shows exact text values and a non-geographic disclaimer; activating a tile opens only aggregate totals/type/stage in a focus-managed modal that closes with Escape, backdrop, or button; and neither view relies on color alone or exposes another applicant's data.
 
 ### TC-26 — Step progress and multi-file evidence bundles
 
