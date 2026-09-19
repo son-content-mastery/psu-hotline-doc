@@ -232,6 +232,10 @@ If frontend tests are not present, record that fact and run the production build
 **When** the applicant opens compact steps in a non-sequential order and selects two valid photographs together  
 **Then** overall and per-step completed/required/action counts equal server state; opening a step does not change completion; file selection starts one bundle upload without a repeated upload-selected CTA; both files share one bundle version with distinct attachment indexes; replacing the item retains the prior bundle; and the UI announces progress with text in addition to the progress bar.
 
+## Approved follow-up test gate: email identity and notifications
+
+Email registration, activation, and workflow notifications are not included in TC-01 through TC-26 until their implementation increment begins. When implemented, the release gate is the ten acceptance checks in `docs/security/email-identity-notifications.md`, including role-mass-assignment protection, non-enumerating responses, token expiry/single use, transaction/outbox behavior, recipient scoping, privacy, localization, accessibility, and a non-production Gmail delivery smoke test.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:

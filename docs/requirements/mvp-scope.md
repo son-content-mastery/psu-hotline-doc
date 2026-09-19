@@ -169,7 +169,7 @@ Do not implement these until the complete Must Have flow is working:
 
 - full OCR or advanced AI document understanding;
 - historical case search;
-- workflow email or other notification delivery beyond security-critical password reset;
+- workflow email or other notification delivery beyond security-critical password reset in the current Hackathon implementation (the approved follow-up is specified in `docs/security/email-identity-notifications.md`);
 - advanced analytics or officer productivity reports;
 - backup-management UI;
 - discussion/chat;
@@ -191,6 +191,12 @@ Future compatibility means keeping clean interfaces and normalized translationsâ
 - Local media storage is suitable for a local demo, not a production records system.
 - Authentication uses demo accounts rather than verified citizen identity.
 - Central reporting is operational summary data, not a full analytics platform.
+
+## Approved Follow-up: Email Activation and Notifications
+
+The next bounded authentication increment adds applicant registration, email activation through a link delivered by Gmail SMTP, and a small set of transactional workflow notifications. Gmail is an email transport, not Google OAuth or a replacement for Django authentication. Privileged roles remain administrator-managed and every existing owner/authority boundary still applies.
+
+This follow-up is specified in `docs/security/email-identity-notifications.md`. It must not be represented as implemented until its model/API/UI, redacted delivery handling, and acceptance checks are complete. The existing password-reset email can use the same SMTP configuration immediately.
 
 ## Scope-change Rule
 
