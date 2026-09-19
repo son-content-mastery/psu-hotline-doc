@@ -348,7 +348,12 @@ def test_first_submit_refreshes_changed_master_requirements(seeded, api_client):
 
 
 def test_applicant_ownership_and_protected_patch_are_enforced(seeded, api_client):
-    other = User.objects.create_user(email="other@example.test", password="pass", display_name="Other")
+    other = User.objects.create_user(
+        email="other@example.test",
+        password="pass",
+        display_name="Other",
+        email_verified_at=timezone.now(),
+    )
     application = create_application(seeded["applicant"], seeded["patong"], name="Private")
     document = add_current_documents(application)[0]
     api_client.force_authenticate(other)
@@ -384,6 +389,7 @@ def test_local_officer_scope_and_draft_privacy(seeded, api_client):
         display_name="Other officer",
         role=User.Role.LOCAL_OFFICER,
         local_authority=other_authority,
+        email_verified_at=timezone.now(),
     )
     submitted = create_application(
         seeded["applicant"], other_authority, status=Application.Status.SUBMITTED, name="Other authority"

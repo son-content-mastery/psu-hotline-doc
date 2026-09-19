@@ -156,6 +156,9 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Hackathon MVP API for Phuket accommodation licensing guidance.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "ENUM_NAME_OVERRIDES": {
+        "RequirementStepEnum": ["APPLICANT", "PREMISES", "FACILITIES", "SAFETY", "MANAGER"],
+    },
 }
 
 LOGGING = {
