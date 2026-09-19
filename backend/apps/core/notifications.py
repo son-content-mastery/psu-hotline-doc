@@ -2,11 +2,14 @@ import logging
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
 from django.core.mail import send_mail
 from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from .exceptions import DomainError
 from .models import Application, AuditLog, EmailOutbox, User
@@ -20,6 +23,10 @@ SUBJECTS = {
     EmailOutbox.Template.ACCOUNT_ACTIVATION: {
         "th": "ยืนยันอีเมลสำหรับ HoTLinE Doc",
         "en": "Verify your HoTLinE Doc email",
+    },
+    EmailOutbox.Template.PASSWORD_RESET: {
+        "th": "ตั้งรหัสผ่าน HoTLinE Doc ใหม่",
+        "en": "Reset your HoTLinE Doc password",
     },
     EmailOutbox.Template.APPLICATION_SUBMITTED: {
         "th": "HoTLinE Doc ได้รับคำขอแล้ว",
@@ -139,6 +146,15 @@ def queue_activation_email(user):
     )
 
 
+def queue_password_reset_email(user):
+    minute_bucket = int(timezone.now().timestamp() // 60)
+    return queue_email(
+        template_code=EmailOutbox.Template.PASSWORD_RESET,
+        recipient=user,
+        event_identifier=f"user:{user.pk}:minute:{minute_bucket}",
+    )
+
+
 def queue_application_event(application, template_code, status_history_id):
     if not settings.WORKFLOW_NOTIFICATION_EMAIL_ENABLED:
         return []
@@ -188,6 +204,20 @@ def _render_message(entry):
                 "display_name": entry.recipient.display_name,
                 "activation_url": activation_url,
                 "expiry_hours": max(1, settings.ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS // 3600),
+                "locale": locale,
+            },
+        )
+    elif entry.template_code == EmailOutbox.Template.PASSWORD_RESET:
+        if not entry.recipient.is_active or entry.recipient.email_verified_at is None:
+            return None
+        uid = urlsafe_base64_encode(force_bytes(entry.recipient.pk))
+        token = default_token_generator.make_token(entry.recipient)
+        reset_url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/reset-password?uid={uid}&token={token}"
+        body = render_to_string(
+            "emails/password_reset.txt",
+            {
+                "display_name": entry.recipient.display_name,
+                "reset_url": reset_url,
                 "locale": locale,
             },
         )

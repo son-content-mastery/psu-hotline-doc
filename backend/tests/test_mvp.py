@@ -1285,6 +1285,11 @@ def test_password_reset_is_generic_single_use_and_changes_password(seeded, setti
     )
     assert requested.status_code == 202
     assert requested.json() == unknown.json()
+    reset_entry = EmailOutbox.objects.get(
+        recipient=seeded["applicant"],
+        template_code=EmailOutbox.Template.PASSWORD_RESET,
+    )
+    assert deliver_email_outbox(reset_entry.pk) is True
     assert len(mail.outbox) == 1
     match = re.search(r"uid=([^&\s]+)&token=([^\s]+)", mail.outbox[0].body)
     assert match

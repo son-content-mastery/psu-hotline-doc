@@ -598,6 +598,7 @@ class AuditLog(ImmutableEventMixin):
 class EmailOutbox(models.Model):
     class Template(models.TextChoices):
         ACCOUNT_ACTIVATION = "ACCOUNT_ACTIVATION", "Account activation"
+        PASSWORD_RESET = "PASSWORD_RESET", "Password reset"
         APPLICATION_SUBMITTED = "APPLICATION_SUBMITTED", "Application submitted"
         APPLICATION_REVISION_REQUESTED = "APPLICATION_REVISION_REQUESTED", "Application revision requested"
         APPLICATION_RESUBMITTED = "APPLICATION_RESUBMITTED", "Application resubmitted"

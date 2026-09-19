@@ -5,13 +5,12 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Count, Max, Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -43,7 +42,7 @@ from .models import (
     User,
 )
 from .permissions import IsApplicant, IsCentralOfficer, IsLocalOfficer, IsVerifiedUser
-from .notifications import activate_user_from_token, queue_activation_email
+from .notifications import activate_user_from_token, queue_activation_email, queue_password_reset_email
 from .serializers import (
     ActivationCompleteOutputSerializer,
     ActivationConfirmSerializer,
@@ -567,21 +566,7 @@ class PasswordResetRequestView(ContractAPIView):
             email_verified_at__isnull=False,
         ).first()
         if user and user.has_usable_password():
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            reset_url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/reset-password?uid={uid}&token={token}"
-            send_mail(
-                subject="HoTLinE Doc password reset / ตั้งรหัสผ่านใหม่",
-                message=(
-                    "Use the link below to set a new HoTLinE Doc password.\n"
-                    "ใช้ลิงก์ด้านล่างเพื่อตั้งรหัสผ่าน HoTLinE Doc ใหม่\n\n"
-                    f"{reset_url}\n\n"
-                    "If you did not request this, you can ignore this message."
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
+            queue_password_reset_email(user)
         return Response({"accepted": True}, status=status.HTTP_202_ACCEPTED)
 
 

@@ -243,7 +243,7 @@ The token expires after the configured lifetime and becomes invalid after use or
 { "accepted": true }
 ```
 
-The same response is returned for an unknown, disabled, unverified, or active verified email. For an active verified account with a usable password, Django sends a link based on configured `FRONTEND_BASE_URL`. Local demo delivery uses the console email backend; production must configure an approved mail provider.
+The same response is returned for an unknown, disabled, unverified, or active verified email. For an active verified account with a usable password, Django queues an idempotent outbox message; the worker creates the single-use token at delivery time and sends a link based on configured `FRONTEND_BASE_URL`. Local demo delivery uses the console email backend; production must configure an approved mail provider.
 
 **Important errors:** `400 VALIDATION_ERROR`; `403 CSRF_FAILED`; `429 RATE_LIMITED`.
 

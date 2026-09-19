@@ -46,7 +46,7 @@ Emails are transactional prompts, not the source of workflow truth. The in-app s
 | Event | Recipient | Email intent |
 | --- | --- | --- |
 | Account registration accepted | Applicant email | Verify email and activate the account |
-| Password reset requested | Active, verified account | Set a new password with the existing single-use flow |
+| Password reset requested | Active, verified account | Set a new password with the existing single-use flow; deliver through the retrying outbox and create the token only when sending |
 | Application submitted | Applicant; active officers in the responsible authority | Confirm reference/status; alert the correct review queue |
 | Application revision requested | Applicant | State that action is required and link to the application |
 | Application resubmitted | Applicant; active officers in the responsible authority | Confirm receipt; alert the review queue |
