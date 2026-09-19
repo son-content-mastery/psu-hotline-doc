@@ -136,6 +136,10 @@ EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT_SECONDS", "10"))
+EMAIL_SUPPRESSED_DOMAINS = env_list(
+    "EMAIL_SUPPRESSED_DOMAINS",
+    "example.test,example.com,example.org",
+)
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "HoTLinE Doc <noreply@example.test>")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
 ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS = int(

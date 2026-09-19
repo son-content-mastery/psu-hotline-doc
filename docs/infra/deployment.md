@@ -99,6 +99,7 @@ Expected settings:
 | `EMAIL_HOST_USER` | SMTP login name | Full Gmail or Google Workspace email address. |
 | `EMAIL_HOST_PASSWORD` | SMTP secret | Google App Password in ignored `.env`/secret storage; never the normal Google password. |
 | `EMAIL_TIMEOUT_SECONDS` | SMTP connection timeout | `10` seconds locally; prevents a request from hanging indefinitely. |
+| `EMAIL_SUPPRESSED_DOMAINS` | SMTP delivery denylist for non-routable demo recipients | Keep `example.test,example.com,example.org`; matching recipients are terminally suppressed before the SMTP call. |
 | `ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS` | Signed activation-link lifetime | `86400` (24 hours). |
 | `EMAIL_OUTBOX_MAX_ATTEMPTS` | Maximum delivery attempts before terminal failure | `5`. |
 | `EMAIL_OUTBOX_RETRY_BASE_SECONDS` | Base for bounded exponential retry delay | `60`. |
@@ -130,6 +131,7 @@ EMAIL_USE_SSL=false
 EMAIL_HOST_USER=project-mailbox@gmail.com
 EMAIL_HOST_PASSWORD=replace-with-16-character-google-app-password
 EMAIL_TIMEOUT_SECONDS=10
+EMAIL_SUPPRESSED_DOMAINS=example.test,example.com,example.org
 DEFAULT_FROM_EMAIL=HoTLinE Doc <project-mailbox@gmail.com>
 ```
 

@@ -214,6 +214,16 @@ def _render_message(entry):
     return SUBJECTS[entry.template_code][locale], body
 
 
+def _recipient_domain_is_suppressed(email):
+    if settings.EMAIL_BACKEND != "django.core.mail.backends.smtp.EmailBackend":
+        return False
+    domain = email.rsplit("@", 1)[-1].strip().lower()
+    return any(
+        domain == suppressed.lower() or domain.endswith(f".{suppressed.lower()}")
+        for suppressed in settings.EMAIL_SUPPRESSED_DOMAINS
+    )
+
+
 def deliver_email_outbox(entry_id):
     with transaction.atomic():
         entry = (
@@ -225,25 +235,30 @@ def deliver_email_outbox(entry_id):
             return False
         entry.attempt_count += 1
         try:
-            rendered = _render_message(entry)
-            if rendered is None:
+            if _recipient_domain_is_suppressed(entry.recipient.email):
                 entry.status = EmailOutbox.Status.SENT
                 entry.sent_at = timezone.now()
-                entry.last_error_code = "RECIPIENT_NO_LONGER_ELIGIBLE"
+                entry.last_error_code = "RECIPIENT_DOMAIN_SUPPRESSED"
             else:
-                subject, body = rendered
-                accepted = send_mail(
-                    subject=subject,
-                    message=body,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[entry.recipient.email],
-                    fail_silently=False,
-                )
-                if accepted != 1:
-                    raise RuntimeError("Email backend did not accept the message")
-                entry.status = EmailOutbox.Status.SENT
-                entry.sent_at = timezone.now()
-                entry.last_error_code = ""
+                rendered = _render_message(entry)
+                if rendered is None:
+                    entry.status = EmailOutbox.Status.SENT
+                    entry.sent_at = timezone.now()
+                    entry.last_error_code = "RECIPIENT_NO_LONGER_ELIGIBLE"
+                else:
+                    subject, body = rendered
+                    accepted = send_mail(
+                        subject=subject,
+                        message=body,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[entry.recipient.email],
+                        fail_silently=False,
+                    )
+                    if accepted != 1:
+                        raise RuntimeError("Email backend did not accept the message")
+                    entry.status = EmailOutbox.Status.SENT
+                    entry.sent_at = timezone.now()
+                    entry.last_error_code = ""
         except Exception as error:
             entry.last_error_code = type(error).__name__[:120]
             if entry.attempt_count >= settings.EMAIL_OUTBOX_MAX_ATTEMPTS:
