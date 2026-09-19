@@ -203,7 +203,11 @@ The email worker scans approved hotel licences and queues idempotent reminders a
 
 ## Implemented Extension: Document Quality Preflight (S1A)
 
-Every new image upload receives a small advisory check for resolution, exposure, contrast, and possible blur; the result is visible to both the applicant and the authorized local officer. Valid PDFs state that their structure passed upload validation while visual quality remains unchecked. The result is tied to the exact file version, stores no extracted content, and never blocks submission or replaces officer review. Full OCR/document-type recognition remains outside this batch and is S1B.
+Every new image upload receives a small advisory check for resolution, exposure, contrast, and possible blur; the result is visible to both the applicant and the authorized local officer. Valid PDFs state that their structure passed upload validation while visual quality remains unchecked. The result is tied to the exact file version, stores no extracted content, and never blocks submission or replaces officer review.
+
+## Implemented Extension: Document-family OCR (S1B)
+
+Local Thai/English OCR checks recognizable text-document families and reports a match, possible mismatch, inconclusive, unavailable, or not-applicable result. It uses embedded PDF text where present and renders at most the first scanned page. Raw OCR text is transient and never persisted or returned. This is not full field extraction, authenticity checking, legal validation, facial/identity matching, or an automatic rejection system; those remain explicitly outside scope.
 
 ## Scope-change Rule
 

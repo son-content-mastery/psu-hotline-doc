@@ -128,6 +128,8 @@ Never overwrite an earlier upload. Files selected together create one bundle ver
 
 Quality warnings are advisory and do not add another CTA, reduce completion counts, or disable **Review before submission**. The authorized officer sees the same version-bound result as context, but still opens the protected file and records the human decision.
 
+When document-family OCR applies, show its result beneath the quality message. A possible mismatch names only the controlled family detected and asks the user to check the selected file. Inconclusive/unavailable results direct manual review without implying failure. Photo evidence explicitly says OCR is not applicable. Never display raw OCR text, confidence percentages, or identity values.
+
 Do not rely on the browser `accept` attribute for security. Never preview executable or unvalidated content inline.
 
 ## Completeness and next action

@@ -275,6 +275,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** the low-quality image receives stable warning codes, the clear image passes, and the PDF reports limited visual coverage; the result is shown to the owning applicant and scoped officer, contains no extracted content, leaves status `UPLOADED`, and never changes readiness or the human review decision.
 
+### TC-31 — Document-family OCR is bounded, private, and advisory
+
+**Layer:** Backend classifier/subprocess-boundary tests plus applicant/officer component tests.
+
+**Given** Thai/English identity cues, an expected building record, photo evidence, empty OCR output, and an unavailable engine
+
+**When** the type preflight runs
+
+**Then** it reports match, possible mismatch, not applicable, inconclusive, or unavailable as appropriate; stores/returns only controlled family metadata; never stores raw OCR text; never invokes a shell; respects page/timeout bounds; and does not change upload, readiness, or officer authorization rules.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:

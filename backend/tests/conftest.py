@@ -9,6 +9,7 @@ from apps.core.models import LocalAuthority, User
 @pytest.fixture(autouse=True)
 def use_in_memory_email_backend(settings):
     settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    settings.DOCUMENT_TYPE_OCR_ENABLED = False
     cache.clear()
 
 

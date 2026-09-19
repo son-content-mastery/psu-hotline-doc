@@ -61,6 +61,9 @@ describe('officer application review', () => {
                 status: 'WARNING',
                 issue_codes: ['LOW_RESOLUTION'],
                 analyzer_version: 'quality-v1',
+                type_check_status: 'POSSIBLE_MISMATCH',
+                detected_family: 'HOUSE_REGISTRATION',
+                type_analyzer_version: 'ocr-family-v1',
                 analyzed_at: '2026-09-18T04:00:01Z',
               },
               reviews: [],
@@ -96,6 +99,8 @@ describe('officer application review', () => {
     expect(text).toContain('Application decision history')
     expect(text).toContain('Reason: Review started')
     expect(text).toContain('The image resolution may be too low')
+    expect(text).toContain('OCR found cues from a different document family')
+    expect(text).toContain('Detected family: house registration')
     expect(wrapper.findAll('button').some((button) => button.text().includes('Return application for correction'))).toBe(true)
     expect(wrapper.findAll('button').some((button) => button.text().includes('Reject application'))).toBe(true)
     expect(text).not.toContain('Approve and issue licence')

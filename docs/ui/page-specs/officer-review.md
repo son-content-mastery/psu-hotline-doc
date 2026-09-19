@@ -77,6 +77,7 @@ Every required document is reviewed individually. Each item shows:
 - filename, upload date/time, and uploader role;
 - current localized document status;
 - the same version-bound advisory quality-preflight result shown to the applicant, clearly separated from the officer's decision;
+- document-family OCR context when applicable, without raw extracted text or authority to auto-decide;
 - prior versions/history in a collapsed section;
 - secure view/download action;
 - any earlier officer reason;

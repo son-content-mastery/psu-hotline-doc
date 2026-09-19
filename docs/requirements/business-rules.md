@@ -121,6 +121,7 @@ Sample demo document types may include แบบคำขอ, หลักฐา
 - Applicants can upload only to owned, editable applications. Officers do not upload on an applicant's behalf in the MVP.
 - Each newly uploaded file may receive one version-bound advisory `DocumentPreflight`. Quality warnings do not change the document status, completeness, submission readiness, or officer decision authority.
 - The quality analyzer persists only stable issue codes, analyzer version, result status, and server time. It does not persist raw OCR text, images, thumbnails, extracted identity data, or opaque confidence scores.
+- S1B compares transient Thai/English OCR only against controlled document-family markers. A possible mismatch is advisory and cannot reject a document or application; ambiguous shared families such as identity cards and house registrations remain family-level results rather than invented exact classifications.
 
 Document display states:
 

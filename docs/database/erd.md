@@ -198,6 +198,9 @@ erDiagram
         string status
         json issue_codes
         string analyzer_version
+        string type_check_status
+        string detected_family
+        string type_analyzer_version
         datetime analyzed_at
     }
 
@@ -343,7 +346,7 @@ Implement these database protections where supported, with matching application 
 | `ApplicationRequirement` | unique `(application_id, document_type_id)` |
 | `Application` | unique nullable reference number; indexes `(property_id, status)` and `(responsible_authority_id, status)` |
 | `ApplicationDocument` | unique `(application_id, document_type_id, version, attachment_index)`; conditional unique current row per `(application_id, document_type_id, attachment_index)`; positive version/attachment index/file size |
-| `DocumentPreflight` | unique application document; controlled result status and version-bound analyzer metadata |
+| `DocumentPreflight` | unique application document; controlled quality/type result codes and version-bound analyzer metadata; no raw OCR text |
 | `FeeSchedule` | amount ≥ 0, validity years > 0, end ≥ start; prevent overlapping active periods for a property type/currency in validation/constraint |
 | `License` | unique application; unique artifact number; hotel licence requires fee/validity/expiry while notification acknowledgement requires those fields to be null |
 | Histories/audit | indexes by parent/object and descending `created_at`; no product update/delete endpoint |

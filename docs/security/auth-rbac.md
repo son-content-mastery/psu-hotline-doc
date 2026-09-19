@@ -188,6 +188,10 @@ Antivirus/content-disarm scanning is not implemented for the Hackathon unless a 
 
 After authoritative type/safety validation, the upload service performs a bounded synchronous quality check with the already-decoded bytes. Images are checked for low resolution, extreme exposure, low contrast, and a conservative possible-blur signal. Valid PDFs receive an explicit limited result because this batch does not render pages or run OCR. Results are version-bound advisory metadata: they never make a file authentic, approve it, or block submission. No pixels, thumbnails, extracted text, identity values, or analyzer metrics are copied into PostgreSQL or logs. Disabling `DOCUMENT_QUALITY_PREFLIGHT_ENABLED` stores no result for later uploads.
 
+### Bounded document-family OCR (S1B)
+
+The local backend image includes Tesseract with Thai/English language data and Poppler. Text PDFs use their embedded text first; scanned PDFs render only page one, and images use the validated upload bytes through a private temporary file. Every subprocess uses an argument list without a shell, suppresses document-derived stderr/stdout from logs, has a configurable 1–60 second timeout, and cleans temporary files automatically. OCR text exists only in process memory long enough to compare controlled family markers; it is never stored, returned, placed in audit/email data, or logged. The persisted result is only status, a controlled family code, analyzer version, and server time. Engine failure is `UNAVAILABLE`, weak evidence is `INCONCLUSIVE`, and visual/photo evidence is `NOT_APPLICABLE`; all fail open to human review.
+
 ## Data, logs, and secrets
 
 - Configuration and secrets come from environment variables; `.env` is ignored and `.env.example` contains placeholders only.

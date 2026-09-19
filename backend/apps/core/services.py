@@ -1,4 +1,9 @@
 import io
+import re
+import shutil
+import subprocess
+import tempfile
+import unicodedata
 import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -47,6 +52,53 @@ QUALITY_MIN_CONTRAST_STDDEV = 12
 QUALITY_DARK_MEAN = 40
 QUALITY_BRIGHT_MEAN = 245
 QUALITY_MIN_EDGE_VARIANCE = 60
+TYPE_ANALYZER_VERSION = "ocr-family-v1"
+
+DOCUMENT_FAMILY_BY_CODE = {
+    "HOTEL_APPLICATION_RR1": "HOTEL_APPLICATION",
+    "NON_HOTEL_NOTIFICATION_FORM": "NON_HOTEL_NOTIFICATION",
+    "APPLICANT_HOUSE_REGISTRATION": "HOUSE_REGISTRATION",
+    "MANAGER_HOUSE_REGISTRATION": "HOUSE_REGISTRATION",
+    "ACCOMMODATION_HOUSE_REGISTRATION": "HOUSE_REGISTRATION",
+    "APPLICANT_ID_CARD": "IDENTITY_CARD",
+    "MANAGER_ID_CARD": "IDENTITY_CARD",
+    "COMPANY_REGISTRATION": "COMPANY_REGISTRATION",
+    "COMPANY_MOA_AND_REPRESENTATIVE": "COMPANY_MOA",
+    "PRIMARY_INCOME_EVIDENCE": "INCOME_EVIDENCE",
+    "BUILDING_PERMIT_O1": "BUILDING_RECORD",
+    "BUILDING_MODIFICATION_OR_USE_CERT": "BUILDING_RECORD",
+    "BUILDING_PERMIT_OR_CERTIFICATE": "BUILDING_RECORD",
+    "LAND_RIGHT_OR_CONSENT": "LAND_RIGHT",
+    "LAND_RIGHT_CONSENT_OR_LEASE": "LAND_RIGHT",
+    "IMPACT_REPORT": "IMPACT_REPORT",
+    "LIABILITY_INSURANCE": "INSURANCE",
+    "MANAGER_NOTIFICATION_FORM": "MANAGER_NOTIFICATION",
+    "MANAGER_APPOINTMENT_LETTER": "MANAGER_APPOINTMENT",
+    "MANAGER_MEDICAL_CERTIFICATE": "MEDICAL_CERTIFICATE",
+    "MANAGER_EDUCATION_CERTIFICATE": "EDUCATION_CERTIFICATE",
+}
+
+OCR_FAMILY_MARKERS = {
+    "HOTEL_APPLICATION": ("แบบรร1", "คำขอรับใบอนุญาตประกอบธุรกิจโรงแรม", "hotel license application"),
+    "NON_HOTEL_NOTIFICATION": ("สถานที่พักที่ไม่เป็นโรงแรม", "non hotel accommodation notification"),
+    "HOUSE_REGISTRATION": ("ทะเบียนบ้าน", "house registration"),
+    "IDENTITY_CARD": ("บัตรประจำตัวประชาชน", "บัตรประชาชน", "thai national id", "identity card"),
+    "COMPANY_REGISTRATION": ("กรมพัฒนาธุรกิจการค้า", "หนังสือรับรองนิติบุคคล", "company registration certificate"),
+    "COMPANY_MOA": ("หนังสือบริคณห์สนธิ", "memorandum of association"),
+    "INCOME_EVIDENCE": ("หลักฐานรายได้", "หนังสือรับรองรายได้", "income certificate"),
+    "BUILDING_RECORD": ("ใบอนุญาตก่อสร้าง", "ดัดแปลงอาคาร", "เปลี่ยนการใช้อาคาร", "building permit", "building modification"),
+    "LAND_RIGHT": ("โฉนดที่ดิน", "หนังสือยินยอมให้ใช้สถานที่", "สัญญาเช่า", "land title", "lease agreement"),
+    "IMPACT_REPORT": ("รายงานผลกระทบ", "impact assessment"),
+    "INSURANCE": ("กรมธรรม์", "ประกันภัย", "insurance policy", "liability insurance"),
+    "MANAGER_NOTIFICATION": ("ใบแจ้งเป็นผู้จัดการ", "manager notification"),
+    "MANAGER_APPOINTMENT": ("หนังสือแต่งตั้งผู้จัดการ", "manager appointment"),
+    "MEDICAL_CERTIFICATE": ("ใบรับรองแพทย์", "medical certificate"),
+    "EDUCATION_CERTIFICATE": ("วุฒิการศึกษา", "ปริญญาบัตร", "education certificate"),
+}
+
+
+class OcrUnavailable(Exception):
+    pass
 
 
 @dataclass(frozen=True)
@@ -455,6 +507,127 @@ def analyze_document_quality(data, content_type):
         }
 
 
+def _normalize_ocr_text(value):
+    thai_digits = str.maketrans("๐๑๒๓๔๕๖๗๘๙", "0123456789")
+    normalized = unicodedata.normalize("NFKC", value).translate(thai_digits).lower()
+    return re.sub(r"[^0-9a-zก-๙]+", " ", normalized).strip()
+
+
+def _run_tesseract(path):
+    if not shutil.which("tesseract"):
+        raise OcrUnavailable
+    try:
+        completed = subprocess.run(
+            ["tesseract", str(path), "stdout", "-l", "tha+eng", "--psm", "6"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=settings.DOCUMENT_TYPE_OCR_TIMEOUT_SECONDS,
+            text=True,
+        )
+    except (subprocess.SubprocessError, OSError):
+        raise OcrUnavailable
+    return completed.stdout[:20000]
+
+
+def _extract_ocr_text(data, content_type):
+    if content_type == "application/pdf":
+        reader = PdfReader(io.BytesIO(data), strict=True)
+        embedded_text = "\n".join(
+            reader.pages[index].extract_text() or "" for index in range(min(3, len(reader.pages)))
+        )
+        if len(_normalize_ocr_text(embedded_text)) >= 12:
+            return embedded_text[:20000]
+        if not shutil.which("pdftoppm"):
+            raise OcrUnavailable
+        try:
+            with tempfile.TemporaryDirectory(prefix="hotline-ocr-") as directory:
+                source_path = Path(directory) / "source.pdf"
+                source_path.write_bytes(data)
+                output_prefix = Path(directory) / "page"
+                subprocess.run(
+                    [
+                        "pdftoppm",
+                        "-f",
+                        "1",
+                        "-l",
+                        "1",
+                        "-r",
+                        "180",
+                        "-png",
+                        str(source_path),
+                        str(output_prefix),
+                    ],
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=settings.DOCUMENT_TYPE_OCR_TIMEOUT_SECONDS,
+                )
+                page_text = [_run_tesseract(path) for path in sorted(Path(directory).glob("page-*.png"))]
+                return "\n".join(page_text)[:20000]
+        except (subprocess.SubprocessError, OSError):
+            raise OcrUnavailable
+    suffix = ".png" if content_type == "image/png" else ".jpg"
+    try:
+        with tempfile.NamedTemporaryFile(prefix="hotline-ocr-", suffix=suffix) as source:
+            source.write(data)
+            source.flush()
+            return _run_tesseract(source.name)
+    except OSError:
+        raise OcrUnavailable
+
+
+def analyze_document_type(data, content_type, document_type):
+    if not settings.DOCUMENT_TYPE_OCR_ENABLED:
+        return {
+            "type_check_status": DocumentPreflight.TypeCheckStatus.NOT_RUN,
+            "detected_family": "",
+            "type_analyzer_version": "",
+        }
+    expected_family = DOCUMENT_FAMILY_BY_CODE.get(document_type.code)
+    if not expected_family:
+        return {
+            "type_check_status": DocumentPreflight.TypeCheckStatus.NOT_APPLICABLE,
+            "detected_family": "",
+            "type_analyzer_version": TYPE_ANALYZER_VERSION,
+        }
+    try:
+        normalized_text = _normalize_ocr_text(_extract_ocr_text(data, content_type))
+    except (OcrUnavailable, PdfReadError, ValueError, EOFError):
+        return {
+            "type_check_status": DocumentPreflight.TypeCheckStatus.UNAVAILABLE,
+            "detected_family": "",
+            "type_analyzer_version": TYPE_ANALYZER_VERSION,
+        }
+    if len(normalized_text) < 5:
+        return {
+            "type_check_status": DocumentPreflight.TypeCheckStatus.INCONCLUSIVE,
+            "detected_family": "",
+            "type_analyzer_version": TYPE_ANALYZER_VERSION,
+        }
+    scores = {
+        family: sum(_normalize_ocr_text(marker) in normalized_text for marker in markers)
+        for family, markers in OCR_FAMILY_MARKERS.items()
+    }
+    best_score = max(scores.values(), default=0)
+    best_families = [family for family, score in scores.items() if score == best_score and score > 0]
+    if len(best_families) != 1:
+        status = DocumentPreflight.TypeCheckStatus.INCONCLUSIVE
+        detected_family = ""
+    else:
+        detected_family = best_families[0]
+        status = (
+            DocumentPreflight.TypeCheckStatus.MATCH
+            if detected_family == expected_family
+            else DocumentPreflight.TypeCheckStatus.POSSIBLE_MISMATCH
+        )
+    return {
+        "type_check_status": status,
+        "detected_family": detected_family,
+        "type_analyzer_version": TYPE_ANALYZER_VERSION,
+    }
+
+
 @transaction.atomic
 def upload_document(*, application_id, document_type_id, actor, upload=None, uploads=None):
     application = (
@@ -509,7 +682,26 @@ def upload_document(*, application_id, document_type_id, actor, upload=None, upl
             "DOCUMENT_NOT_OPEN_FOR_REVISION", "This document was not requested for replacement."
         )
     validated_uploads = [validate_uploaded_file(item) for item in upload_list]
-    preflight_results = [analyze_document_quality(data, mime) for _, _, mime, data in validated_uploads]
+    preflight_results = []
+    for _, _, mime, data in validated_uploads:
+        quality_result = analyze_document_quality(data, mime)
+        type_result = analyze_document_type(data, mime, requirement.document_type)
+        if quality_result is None and type_result["type_check_status"] == DocumentPreflight.TypeCheckStatus.NOT_RUN:
+            preflight_results.append(None)
+            continue
+        preflight_results.append(
+            {
+                **(
+                    quality_result
+                    or {
+                        "status": DocumentPreflight.Status.LIMITED,
+                        "issue_codes": ["QUALITY_CHECK_UNAVAILABLE"],
+                        "analyzer_version": "",
+                    }
+                ),
+                **type_result,
+            }
+        )
     max_version = (
         ApplicationDocument.objects.filter(application=application, document_type_id=document_type_id)
         .aggregate(value=Max("version"))["value"]

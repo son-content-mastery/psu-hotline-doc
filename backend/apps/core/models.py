@@ -554,6 +554,14 @@ class DocumentPreflight(models.Model):
         WARNING = "WARNING", "Quality warning detected"
         LIMITED = "LIMITED", "Automated quality check is limited"
 
+    class TypeCheckStatus(models.TextChoices):
+        NOT_RUN = "NOT_RUN", "Document-type check was not run"
+        MATCH = "MATCH", "Document family appears consistent"
+        POSSIBLE_MISMATCH = "POSSIBLE_MISMATCH", "Possible document-family mismatch"
+        INCONCLUSIVE = "INCONCLUSIVE", "Document-type check was inconclusive"
+        UNAVAILABLE = "UNAVAILABLE", "Document-type check was unavailable"
+        NOT_APPLICABLE = "NOT_APPLICABLE", "Document-type OCR is not applicable"
+
     application_document = models.OneToOneField(
         ApplicationDocument,
         on_delete=models.PROTECT,
@@ -562,6 +570,13 @@ class DocumentPreflight(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices)
     issue_codes = models.JSONField(default=list)
     analyzer_version = models.CharField(max_length=30)
+    type_check_status = models.CharField(
+        max_length=30,
+        choices=TypeCheckStatus.choices,
+        default=TypeCheckStatus.NOT_RUN,
+    )
+    detected_family = models.CharField(max_length=40, blank=True)
+    type_analyzer_version = models.CharField(max_length=30, blank=True)
     analyzed_at = models.DateTimeField(auto_now_add=True)
 
 

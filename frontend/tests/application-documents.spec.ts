@@ -108,6 +108,9 @@ describe('step-based applicant document flow', () => {
                   status: 'WARNING',
                   issue_codes: ['POSSIBLY_BLURRY'],
                   analyzer_version: 'quality-v1',
+                  type_check_status: 'NOT_APPLICABLE',
+                  detected_family: null,
+                  type_analyzer_version: 'ocr-family-v1',
                   analyzed_at: '2026-09-19T05:00:00Z',
                 },
               },
@@ -154,6 +157,7 @@ describe('step-based applicant document flow', () => {
     expect(wrapper.text()).toContain('Current evidence bundle: 2 file(s)')
     expect(wrapper.text()).toContain('Check this file before submitting')
     expect(wrapper.text()).toContain('may be blurred or out of focus')
+    expect(wrapper.text()).toContain('OCR is not applicable to this photo')
     wrapper.unmount()
   })
 })

@@ -69,7 +69,7 @@ Amount, currency, validity, and effective dates form one fee schedule row for on
 
 Every attachment is identified by `(application_id, document_type_id, version, attachment_index)`. Files selected together share the bundle version. A conditional uniqueness constraint permits only one current attachment for each application/document type/attachment position. A review references the exact attachment/version it evaluated. Replacing a bundle marks the previous attachments non-current rather than overwriting file paths or review evidence.
 
-`DocumentPreflight` is a one-to-one fact about the exact immutable `ApplicationDocument` version analyzed. It stores a controlled status, stable issue-code list, analyzer version, and server time only. Keeping it separate avoids mixing machine advice with the human document-review state and prevents replacement uploads from inheriting an older result.
+`DocumentPreflight` is a one-to-one fact about the exact immutable `ApplicationDocument` version analyzed. It stores controlled quality/type statuses, stable issue/family codes, analyzer versions, and server time only. Keeping it separate avoids mixing machine advice with the human document-review state and prevents replacement uploads from inheriting an older result. Raw OCR output is intentionally absent.
 
 ### Reviews, status history, and audit are events
 

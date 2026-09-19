@@ -2,6 +2,7 @@ import io
 import re
 from datetime import date, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 from PIL import Image
@@ -42,7 +43,10 @@ from apps.core.models import (
     User,
 )
 from apps.core.services import (
+    OcrUnavailable,
+    _run_tesseract,
     analyze_document_quality,
+    analyze_document_type,
     approve_application,
     capture_requirements,
     evaluate_classification,
@@ -598,6 +602,69 @@ def test_document_quality_preflight_is_advisory_and_persisted(seeded, api_client
     assert clear_result["issue_codes"] == []
 
 
+def test_document_type_ocr_matches_families_without_storing_text(
+    seeded, api_client, settings, monkeypatch
+):
+    settings.DOCUMENT_TYPE_OCR_ENABLED = True
+    monkeypatch.setattr(
+        "apps.core.services._extract_ocr_text",
+        lambda data, content_type: "บัตรประจำตัวประชาชน Thai National ID",
+    )
+    application = create_application(seeded["applicant"], seeded["patong"], name="OCR family preflight")
+    identity_requirement = application.requirements.get(document_type__code="APPLICANT_ID_CARD")
+    api_client.force_authenticate(seeded["applicant"])
+
+    response = api_client.post(
+        f"/api/v1/applications/{application.id}/documents/",
+        {"document_type_id": identity_requirement.document_type_id, "file": make_png("identity.png")},
+        format="multipart",
+    )
+    assert response.status_code == 201
+    assert response.data["preflight"]["type_check_status"] == DocumentPreflight.TypeCheckStatus.MATCH
+    assert response.data["preflight"]["detected_family"] == "IDENTITY_CARD"
+    persisted = DocumentPreflight.objects.get(application_document_id=response.data["id"])
+    assert persisted.type_analyzer_version == "ocr-family-v1"
+    assert "บัตรประจำตัวประชาชน" not in str(persisted.__dict__)
+
+    building_type = DocumentType.objects.get(code="BUILDING_PERMIT_O1")
+    mismatch = analyze_document_type(b"ignored", "image/png", building_type)
+    assert mismatch["type_check_status"] == DocumentPreflight.TypeCheckStatus.POSSIBLE_MISMATCH
+    assert mismatch["detected_family"] == "IDENTITY_CARD"
+
+    photo_type = DocumentType.objects.get(code="PARKING_PHOTOS")
+    skipped = analyze_document_type(b"ignored", "image/png", photo_type)
+    assert skipped["type_check_status"] == DocumentPreflight.TypeCheckStatus.NOT_APPLICABLE
+    assert skipped["detected_family"] == ""
+
+    monkeypatch.setattr("apps.core.services._extract_ocr_text", lambda data, content_type: "")
+    inconclusive = analyze_document_type(b"ignored", "image/png", identity_requirement.document_type)
+    assert inconclusive["type_check_status"] == DocumentPreflight.TypeCheckStatus.INCONCLUSIVE
+
+    def unavailable(*args, **kwargs):
+        raise OcrUnavailable
+
+    monkeypatch.setattr("apps.core.services._extract_ocr_text", unavailable)
+    unavailable_result = analyze_document_type(b"ignored", "image/png", identity_requirement.document_type)
+    assert unavailable_result["type_check_status"] == DocumentPreflight.TypeCheckStatus.UNAVAILABLE
+
+
+def test_tesseract_boundary_uses_argument_list_timeout_and_no_shell(settings, monkeypatch):
+    settings.DOCUMENT_TYPE_OCR_TIMEOUT_SECONDS = 7
+    calls = []
+    monkeypatch.setattr("apps.core.services.shutil.which", lambda command: "/usr/bin/tesseract")
+
+    def fake_run(args, **kwargs):
+        calls.append((args, kwargs))
+        return SimpleNamespace(stdout="identity card")
+
+    monkeypatch.setattr("apps.core.services.subprocess.run", fake_run)
+    assert _run_tesseract("/tmp/test image.png") == "identity card"
+    args, kwargs = calls[0]
+    assert args == ["tesseract", "/tmp/test image.png", "stdout", "-l", "tha+eng", "--psm", "6"]
+    assert kwargs["timeout"] == 7
+    assert "shell" not in kwargs
+
+
 def test_upload_bundle_rejects_more_than_ten_files(seeded, api_client):
     application = create_application(seeded["applicant"], seeded["patong"], name="Oversized bundle")
     requirement = application.requirements.get(document_type__code="PARKING_PHOTOS")
@@ -1015,6 +1082,9 @@ def test_openapi_describes_enriched_officer_and_requirement_payloads(seeded):
     )
     document_properties = schemas["OfficerDocumentOutput"]["properties"]
     assert {"uploaded_at", "uploaded_by", "category", "version_label", "versions", "preflight"} <= set(document_properties)
+    preflight_properties = schemas["DocumentPreflightOutput"]["properties"]
+    assert {"status", "issue_codes", "type_check_status", "detected_family"} <= set(preflight_properties)
+    assert "raw_text" not in preflight_properties
     requirement_properties = schemas["RequirementItemOutput"]["properties"]
     assert {"description", "instructions", "guidance"} <= set(requirement_properties)
     applicant_properties = schemas["ApplicantApplicationListItemOutput"]["properties"]

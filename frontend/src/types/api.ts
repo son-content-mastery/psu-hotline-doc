@@ -277,8 +277,28 @@ export interface DocumentPreflight {
     | 'QUALITY_CHECK_UNAVAILABLE'
   >
   analyzer_version: string
+  type_check_status: 'NOT_RUN' | 'MATCH' | 'POSSIBLE_MISMATCH' | 'INCONCLUSIVE' | 'UNAVAILABLE' | 'NOT_APPLICABLE'
+  detected_family: DocumentFamily | null
+  type_analyzer_version: string | null
   analyzed_at: string
 }
+
+export type DocumentFamily =
+  | 'HOTEL_APPLICATION'
+  | 'NON_HOTEL_NOTIFICATION'
+  | 'HOUSE_REGISTRATION'
+  | 'IDENTITY_CARD'
+  | 'COMPANY_REGISTRATION'
+  | 'COMPANY_MOA'
+  | 'INCOME_EVIDENCE'
+  | 'BUILDING_RECORD'
+  | 'LAND_RIGHT'
+  | 'IMPACT_REPORT'
+  | 'INSURANCE'
+  | 'MANAGER_NOTIFICATION'
+  | 'MANAGER_APPOINTMENT'
+  | 'MEDICAL_CERTIFICATE'
+  | 'EDUCATION_CERTIFICATE'
 
 export interface HistoryEvent {
   id: number

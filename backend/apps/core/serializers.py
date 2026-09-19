@@ -246,6 +246,11 @@ class DocumentPreflightOutputSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["PASS", "WARNING", "LIMITED"])
     issue_codes = serializers.ListField(child=serializers.CharField())
     analyzer_version = serializers.CharField()
+    type_check_status = serializers.ChoiceField(
+        choices=["NOT_RUN", "MATCH", "POSSIBLE_MISMATCH", "INCONCLUSIVE", "UNAVAILABLE", "NOT_APPLICABLE"]
+    )
+    detected_family = serializers.CharField(allow_null=True)
+    type_analyzer_version = serializers.CharField(allow_null=True)
     analyzed_at = serializers.DateTimeField()
 
 

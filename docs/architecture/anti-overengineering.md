@@ -47,7 +47,7 @@ Prefer:
 | Workflow | Central transition map and named backend actions | The workflow grows into many parallel/long-running branches |
 | Audit | Append-only relational rows written in the same transaction | Cross-system audit ingestion becomes a real requirement |
 | Files | Django local/media storage abstraction | A production environment requires durable object storage |
-| Quality preflight | Small synchronous Pillow analysis during validated upload; stable advisory codes only | OCR/rendering needs independent scaling or measured upload latency becomes unacceptable |
+| Document preflight | Synchronous Pillow plus local Tesseract/Poppler with one-page/timeout bounds; stable advisory codes only | Measured upload latency needs independent scaling or a reviewed external OCR provider |
 | Background work | Database email outbox plus one polling Django worker for approved transactional email; otherwise synchronous requests | Another measured operation needs durable retry or independent scaling |
 | Caching | No application cache | Profiling identifies a stable expensive read and invalidation is defined |
 | Administration | Django Admin | Non-technical external administrators need a dedicated experience |
@@ -119,6 +119,8 @@ If a guardrail must change:
 
 The approved email-activation/workflow-notification increment requires delivery only after a committed workflow action and bounded retry when Gmail is unavailable. A relational `EmailOutbox` plus a polling management-command worker was selected over Redis/Celery or a hosted queue: it reuses PostgreSQL, adds no dependency, preserves idempotency, and can be replaced without changing application workflow data. Tests cover commit scoping, duplicate keys, recipient boundaries, retries, and redacted failures.
 
-The approved S1A increment uses Pillow already required for upload verification. It runs one bounded, synchronous advisory analysis before storage and persists only a one-to-one result with stable issue codes. No AI service, queue, OCR engine, image derivative, or raw extraction is added. S1B must be evaluated as a separate dependency and privacy decision rather than hidden inside this model.
+The approved S1A increment uses Pillow already required for upload verification. It runs one bounded, synchronous advisory analysis before storage and persists only a one-to-one result with stable issue codes.
+
+The separately approved S1B increment uses distro-packaged Tesseract (`tha+eng`) and Poppler rather than a cloud OCR API, new queue, or stored extraction corpus. This adds image size/build-time cost but no Python service dependency, credentials, network calls, or new process. Scanned PDFs are limited to page one and every subprocess has a timeout. Raw OCR output is transient; only controlled family/status metadata joins the existing `DocumentPreflight`. If measured upload latency becomes unacceptable, move this exact analyzer boundary behind the existing relational-job pattern before considering more infrastructure.
 
 Hackathon urgency is not by itself a reason to add infrastructure; it is usually a reason to choose the simplest reliable path.

@@ -253,6 +253,31 @@
         "pdf_visual_check_unavailable": "The PDF structure is valid, but visual clarity was not assessed in this step.",
         "quality_check_unavailable": "The quality check could not assess this file; review it manually."
       },
+      "typeStatus": {
+        "match": "OCR found cues consistent with the expected document family.",
+        "possible_mismatch": "OCR found cues from a different document family. Check the selected file.",
+        "inconclusive": "OCR could not identify the document family reliably.",
+        "unavailable": "Document-type OCR was unavailable; review the file manually.",
+        "not_applicable": "Document-type OCR is not applicable to this photo or visual evidence."
+      },
+      "detectedFamily": "Detected family: {family}",
+      "families": {
+        "hotel_application": "hotel licence application",
+        "non_hotel_notification": "non-hotel accommodation notification",
+        "house_registration": "house registration",
+        "identity_card": "identity card",
+        "company_registration": "company registration",
+        "company_moa": "company memorandum",
+        "income_evidence": "income evidence",
+        "building_record": "building permit or record",
+        "land_right": "land-right, consent, or lease evidence",
+        "impact_report": "impact report",
+        "insurance": "insurance document",
+        "manager_notification": "manager notification",
+        "manager_appointment": "manager appointment",
+        "medical_certificate": "medical certificate",
+        "education_certificate": "education certificate"
+      },
       "advisory": "This is an early warning only. It does not confirm document type, authenticity, or officer approval."
     },
     "history": "File history",

@@ -897,6 +897,9 @@ The allowed formats are PDF, JPG/JPEG, and PNG. The maximum size is 10 MiB. Exte
     "status": "LIMITED",
     "issue_codes": ["PDF_VISUAL_CHECK_UNAVAILABLE"],
     "analyzer_version": "quality-v1",
+    "type_check_status": "MATCH",
+    "detected_family": "BUILDING_RECORD",
+    "type_analyzer_version": "ocr-family-v1",
     "analyzed_at": "2026-09-19T07:15:00Z"
   },
   "bundle_count": 1,
@@ -917,7 +920,7 @@ The allowed formats are PDF, JPG/JPEG, and PNG. The maximum size is 10 MiB. Exte
 
 **Important errors:** `400 VALIDATION_ERROR` or `MULTIPLE_FILES_NOT_ALLOWED`; `404 NOT_FOUND` for application or a document type outside the captured checklist; `409 APPLICATION_NOT_EDITABLE`; `409 DOCUMENT_NOT_OPEN_FOR_REVISION` when replacing an item not requested in a revision; `413 FILE_TOO_LARGE`; `415 UNSUPPORTED_FILE_TYPE`. Failed validation stores no file/database row. All files are validated before storage becomes current, and a successful bundle-version increment/current switch is atomic.
 
-`preflight` is an advisory result tied to this exact file version. Image codes may include `LOW_RESOLUTION`, `TOO_DARK`, `TOO_BRIGHT`, `LOW_CONTRAST`, and `POSSIBLY_BLURRY`. A valid PDF returns `LIMITED` with `PDF_VISUAL_CHECK_UNAVAILABLE` until the OCR/rendering batch is implemented. `PASS` means only that this analyzer found no quality warning; it does not establish document type, authenticity, legal sufficiency, or officer approval. The result never changes submission eligibility.
+`preflight` is an advisory result tied to this exact file version. Image codes may include `LOW_RESOLUTION`, `TOO_DARK`, `TOO_BRIGHT`, `LOW_CONTRAST`, and `POSSIBLY_BLURRY`. A valid PDF quality result remains `LIMITED` with `PDF_VISUAL_CHECK_UNAVAILABLE`; S1B may still extract embedded text or render the first scanned page for its separate family check. `type_check_status` is `MATCH`, `POSSIBLE_MISMATCH`, `INCONCLUSIVE`, `UNAVAILABLE`, `NOT_APPLICABLE`, or `NOT_RUN`; `detected_family` is a controlled code or null. `PASS` and `MATCH` mean only that these analyzers found no warning/inconsistency. They do not establish exact document type, authenticity, legal sufficiency, or officer approval. The result never changes submission eligibility, and raw OCR text is never returned or stored.
 
 ### `GET /api/v1/applications/{id}/documents/`
 
@@ -948,6 +951,9 @@ The allowed formats are PDF, JPG/JPEG, and PNG. The maximum size is 10 MiB. Exte
         "status": "LIMITED",
         "issue_codes": ["PDF_VISUAL_CHECK_UNAVAILABLE"],
         "analyzer_version": "quality-v1",
+        "type_check_status": "MATCH",
+        "detected_family": "BUILDING_RECORD",
+        "type_analyzer_version": "ocr-family-v1",
         "analyzed_at": "2026-09-19T07:15:00Z"
       },
       "download_url": "/api/v1/applications/101/documents/991/file/"

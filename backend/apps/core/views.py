@@ -335,6 +335,9 @@ def preflight_data(document):
         "status": preflight.status,
         "issue_codes": preflight.issue_codes,
         "analyzer_version": preflight.analyzer_version,
+        "type_check_status": preflight.type_check_status,
+        "detected_family": preflight.detected_family or None,
+        "type_analyzer_version": preflight.type_analyzer_version or None,
         "analyzed_at": preflight.analyzed_at,
     }
 

@@ -106,7 +106,7 @@ The backend owns:
 - master-data localization/fallback;
 - checklist derivation and submission readiness;
 - upload validation and document versioning;
-- synchronous advisory image-quality preflight attached to each uploaded version;
+- synchronous advisory image-quality and bounded local document-family OCR preflight attached to each uploaded version;
 - the centrally defined application state machine;
 - document review and correction rules;
 - backend-generated references, fees, and licenses;
