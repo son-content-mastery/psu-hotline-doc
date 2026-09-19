@@ -770,6 +770,7 @@ def test_central_summary_is_aggregate_only_and_role_separated(seeded, api_client
         "approved": expected_approved,
     }
     assert response.data["authority_zeroes_included"] is True
+    assert response.data["authority_count"] == len(response.data["by_local_authority"])
     assert len(response.data["by_local_authority"]) == LocalAuthority.objects.filter(is_active=True).count()
     assert all(item["count"] > 0 for item in response.data["by_local_authority"])
     for item in response.data["by_local_authority"]:
@@ -781,6 +782,21 @@ def test_central_summary_is_aggregate_only_and_role_separated(seeded, api_client
     assert api_client.get(f"/api/v1/officer/applications/{sample.id}/").status_code == 403
     api_client.force_authenticate(seeded["officer"])
     assert api_client.get("/api/v1/central/summary/").status_code == 403
+
+
+def test_central_summary_keeps_historical_inactive_authority_totals_consistent(seeded, api_client):
+    seeded["patong"].is_active = False
+    seeded["patong"].save(update_fields=["is_active"])
+    expected_total = Application.objects.count()
+    api_client.force_authenticate(seeded["central"])
+
+    response = api_client.get("/api/v1/central/summary/")
+
+    assert response.status_code == 200
+    assert response.data["totals"]["applications"] == expected_total
+    assert sum(item["count"] for item in response.data["by_local_authority"]) == expected_total
+    patong = next(item for item in response.data["by_local_authority"] if item["id"] == seeded["patong"].id)
+    assert patong["count"] == Application.objects.filter(responsible_authority=seeded["patong"]).count()
 
 
 def test_database_driven_checklist_and_external_guidance(seeded, api_client):

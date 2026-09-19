@@ -1218,6 +1218,7 @@ For a non-hotel notification, `artifact_kind` is `NOTIFICATION_ACKNOWLEDGEMENT`,
       ]
     }
   ],
+  "authority_count": 19,
   "authority_zeroes_included": true,
   "by_current_stage": [
     { "stage": "LOCAL_OFFICER_REVIEW", "count": 4 },

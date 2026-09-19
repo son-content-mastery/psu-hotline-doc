@@ -1350,7 +1350,11 @@ class CentralSummaryView(ContractAPIView):
             }
 
         by_property_type = property_type_breakdown(by_type_rows)
-        authorities = LocalAuthority.objects.filter(is_active=True).annotate(count=Count("applications")).order_by("id")
+        authorities = (
+            LocalAuthority.objects.filter(Q(is_active=True) | Q(applications__isnull=False))
+            .annotate(count=Count("applications", distinct=True))
+            .order_by("id")
+        )
         stages = Counter()
         for status_code, count in status_counts.items():
             stages[current_stage(status_code)] += count
@@ -1391,6 +1395,7 @@ class CentralSummaryView(ContractAPIView):
                 "totals": totals_for(status_counts, queryset.count()),
                 "by_property_type": by_property_type,
                 "by_local_authority": authority_breakdown,
+                "authority_count": len(authority_breakdown),
                 "authority_zeroes_included": True,
                 "by_current_stage": [
                     {"stage": stage, "count": count} for stage, count in sorted(stages.items())
