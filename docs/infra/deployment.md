@@ -106,6 +106,9 @@ Expected settings:
 | `EMAIL_OUTBOX_RETRY_BASE_SECONDS` | Base for bounded exponential retry delay | `60`. |
 | `EMAIL_OUTBOX_POLL_SECONDS` | Worker polling interval | `30`. |
 | `WORKFLOW_NOTIFICATION_EMAIL_ENABLED` | Queue documented workflow messages | `true`; does not disable security-critical activation/reset mail. |
+| `LICENSE_RENEWAL_REMINDERS_ENABLED` | Scan and queue hotel-licence expiry reminders | `true`; disable only when another reviewed scheduler owns this job. |
+| `LICENSE_RENEWAL_REMINDER_DAYS` | Comma-separated positive day thresholds | `90,30,7`; changing values changes future event keys, so review before deployment. |
+| `LICENSE_RENEWAL_SCAN_SECONDS` | Interval between renewal scans in the email worker | `3600`; accepted range is 60–86400 seconds. |
 | `EXPECTED_LOCAL_AUTHORITY_COUNT` | Expected configured Phuket authority coverage used to validate central summaries | `19` for the supplied Hackathon scope. |
 | `DEFAULT_FROM_EMAIL` | Sender identity for password-reset mail | Fictional `example.test` sender locally. |
 | `FRONTEND_BASE_URL` | Trusted base used to build reset links | `http://localhost:5173`; must match the actual browser origin and must not be derived from request headers. |
@@ -239,10 +242,11 @@ Process pending mail once for diagnosis, or inspect the long-running worker:
 
 ```bash
 docker compose exec backend python manage.py process_email_outbox --limit 50
+docker compose exec backend python manage.py queue_license_renewal_reminders
 docker compose logs email-worker
 ```
 
-The worker records only the exception class for a failed delivery and stops retrying after `EMAIL_OUTBOX_MAX_ATTEMPTS`. Do not paste provider responses, tokens, message bodies, or credentials into logs or handoff notes.
+The long-running worker performs the same renewal scan on startup and then at `LICENSE_RENEWAL_SCAN_SECONDS`; the one-shot command is available for diagnosis. Both paths rely on the unique outbox event key, so repeating a scan is safe. The worker records only the exception class for a failed delivery and stops retrying after `EMAIL_OUTBOX_MAX_ATTEMPTS`. Do not paste provider responses, tokens, message bodies, or credentials into logs or handoff notes.
 
 ## Local fallback A: host backend/frontend, Compose PostgreSQL
 

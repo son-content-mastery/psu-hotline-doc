@@ -1,4 +1,5 @@
 from collections import Counter, defaultdict
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
@@ -161,6 +162,25 @@ def classification_data(application, locale):
 
 def application_summary(application, locale):
     requirements = requirement_state(application)
+    renewal = None
+    try:
+        license_record = application.license
+    except License.DoesNotExist:
+        license_record = None
+    if (
+        application.status == Application.Status.APPROVED
+        and license_record
+        and license_record.artifact_kind == License.ArtifactKind.HOTEL_LICENSE
+        and license_record.expires_at
+    ):
+        days_remaining = (license_record.expires_at - timezone.localdate()).days
+        action_required = days_remaining <= max(settings.LICENSE_RENEWAL_REMINDER_DAYS)
+        renewal = {
+            "expires_at": license_record.expires_at,
+            "days_remaining": days_remaining,
+            "status": "EXPIRED" if days_remaining < 0 else "DUE" if action_required else "UPCOMING",
+            "action_required": action_required,
+        }
     return {
         "id": application.id,
         "reference_number": application.reference_number,
@@ -177,6 +197,7 @@ def application_summary(application, locale):
             "current_uploads": requirements["current_uploads"],
             "complete_for_submission": requirements["complete_for_submission"],
         },
+        "renewal": renewal,
         "updated_at": application.updated_at,
     }
 
@@ -415,6 +436,7 @@ def owned_applications(user):
         "property__administrative_subdistrict__district__province",
         "responsible_authority",
         "confirmed_property_type",
+        "license",
     )
 
 
@@ -813,10 +835,18 @@ class ApplicationListCreateView(ContractAPIView):
     @extend_schema(operation_id="list_applicant_applications", responses=PaginatedApplicantApplicationOutputSerializer)
     def get(self, request):
         base_queryset = owned_applications(request.user)
+        renewal_due = Q(
+            status=Application.Status.APPROVED,
+            license__artifact_kind=License.ArtifactKind.HOTEL_LICENSE,
+            license__expires_at__lte=timezone.localdate() + timedelta(days=max(settings.LICENSE_RENEWAL_REMINDER_DAYS)),
+        )
+        action_statuses = [
+            Application.Status.DRAFT,
+            Application.Status.READY_TO_SUBMIT,
+            Application.Status.REVISION_REQUIRED,
+        ]
         summary = {
-            "needs_action": base_queryset.filter(
-                status__in=[Application.Status.DRAFT, Application.Status.READY_TO_SUBMIT, Application.Status.REVISION_REQUIRED]
-            ).count(),
+            "needs_action": base_queryset.filter(Q(status__in=action_statuses) | renewal_due).count(),
             "in_progress": base_queryset.filter(
                 status__in=[Application.Status.SUBMITTED, Application.Status.UNDER_REVIEW, Application.Status.RESUBMITTED]
             ).count(),
@@ -826,7 +856,7 @@ class ApplicationListCreateView(ContractAPIView):
         queryset = base_queryset
         view_filter = request.query_params.get("view", "").strip()
         view_statuses = {
-            "action": [Application.Status.DRAFT, Application.Status.READY_TO_SUBMIT, Application.Status.REVISION_REQUIRED],
+            "action": action_statuses,
             "in_progress": [Application.Status.SUBMITTED, Application.Status.UNDER_REVIEW, Application.Status.RESUBMITTED],
             "completed": [Application.Status.APPROVED, Application.Status.REJECTED],
             "all": Application.Status.values,
@@ -834,7 +864,10 @@ class ApplicationListCreateView(ContractAPIView):
         if view_filter:
             if view_filter not in view_statuses:
                 raise DomainError("VALIDATION_ERROR", "Unknown application view.", http_status=status.HTTP_400_BAD_REQUEST)
-            queryset = queryset.filter(status__in=view_statuses[view_filter])
+            if view_filter == "action":
+                queryset = queryset.filter(Q(status__in=action_statuses) | renewal_due)
+            else:
+                queryset = queryset.filter(status__in=view_statuses[view_filter])
         status_filter = request.query_params.get("status")
         if status_filter:
             if status_filter not in Application.Status.values:

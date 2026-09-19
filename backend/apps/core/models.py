@@ -653,6 +653,7 @@ class EmailOutbox(models.Model):
         APPLICATION_RESUBMITTED = "APPLICATION_RESUBMITTED", "Application resubmitted"
         APPLICATION_APPROVED = "APPLICATION_APPROVED", "Application approved"
         APPLICATION_REJECTED = "APPLICATION_REJECTED", "Application rejected"
+        LICENSE_EXPIRY_REMINDER = "LICENSE_EXPIRY_REMINDER", "License expiry reminder"
 
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"

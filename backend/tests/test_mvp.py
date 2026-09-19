@@ -1,6 +1,6 @@
 import io
 import re
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
@@ -54,6 +54,7 @@ from apps.core.notifications import (
     make_activation_token,
     process_due_email_outbox,
     queue_activation_email,
+    queue_license_renewal_reminders,
 )
 
 
@@ -965,7 +966,7 @@ def test_openapi_describes_enriched_officer_and_requirement_payloads(seeded):
     requirement_properties = schemas["RequirementItemOutput"]["properties"]
     assert {"description", "instructions", "guidance"} <= set(requirement_properties)
     applicant_properties = schemas["ApplicantApplicationListItemOutput"]["properties"]
-    assert {"property_type", "responsible_authority", "requirements"} <= set(applicant_properties)
+    assert {"property_type", "responsible_authority", "requirements", "renewal"} <= set(applicant_properties)
     registration_properties = schemas["Registration"]["properties"]
     assert set(registration_properties) == {"email", "password", "password_confirmation", "terms_accepted"}
     assert "new_password" not in schemas["PasswordResetCompleteOutput"]["properties"]
@@ -1037,6 +1038,111 @@ def test_complete_applicant_officer_license_and_central_flow(seeded, api_client)
     summary = api_client.get("/api/v1/central/summary/")
     assert summary.status_code == 200
     assert summary.data["totals"]["approved"] == Application.objects.filter(status="APPROVED").count()
+
+
+def test_license_renewal_reminders_are_idempotent_per_threshold(seeded, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    settings.FRONTEND_BASE_URL = "http://frontend.test"
+    settings.LICENSE_RENEWAL_REMINDERS_ENABLED = True
+    settings.LICENSE_RENEWAL_REMINDER_DAYS = [90, 30, 7]
+    seeded["applicant"].email = "renewal-recipient@example.net"
+    seeded["applicant"].save(update_fields=["email"])
+    seeded["applicant"].email_verified_at = timezone.now()
+    seeded["applicant"].save(update_fields=["email_verified_at"])
+    application = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        name="Renewal reminder property",
+    )
+    add_current_documents(application, document_status=ApplicationDocument.Status.APPROVED)
+    _, license_record = approve_application(application_id=application.pk, actor=seeded["officer"])
+    mail.outbox.clear()
+
+    today = timezone.localdate()
+    license_record.expires_at = today + timedelta(days=29)
+    license_record.save(update_fields=["expires_at"])
+    application.refresh_from_db()
+    license_record.refresh_from_db()
+    seeded["applicant"].refresh_from_db()
+    assert application.status == Application.Status.APPROVED
+    assert license_record.artifact_kind == License.ArtifactKind.HOTEL_LICENSE
+    assert seeded["applicant"].is_active and seeded["applicant"].email_verified_at is not None
+    assert queue_license_renewal_reminders(on_date=today) == 1
+    assert queue_license_renewal_reminders(on_date=today) == 0
+    first = EmailOutbox.objects.get(
+        application=application,
+        template_code=EmailOutbox.Template.LICENSE_EXPIRY_REMINDER,
+    )
+    assert first.event_key.endswith(f"license:{license_record.pk}:threshold:30:recipient:{seeded['applicant'].pk}")
+    assert deliver_email_outbox(first.pk) is True
+    first.refresh_from_db()
+    assert first.status == EmailOutbox.Status.SENT
+    assert len(mail.outbox) == 1
+    assert license_record.expires_at.isoformat() in mail.outbox[0].body
+    assert application.property.address_line not in mail.outbox[0].body
+    assert mail.outbox[0].attachments == []
+
+    license_record.expires_at = today + timedelta(days=6)
+    license_record.save(update_fields=["expires_at"])
+    assert queue_license_renewal_reminders(on_date=today) == 1
+    assert queue_license_renewal_reminders(on_date=today) == 0
+    assert EmailOutbox.objects.filter(
+        application=application,
+        template_code=EmailOutbox.Template.LICENSE_EXPIRY_REMINDER,
+    ).count() == 2
+    second = EmailOutbox.objects.filter(
+        application=application,
+        template_code=EmailOutbox.Template.LICENSE_EXPIRY_REMINDER,
+        status=EmailOutbox.Status.PENDING,
+    ).get()
+    assert deliver_email_outbox(second.pk) is True
+    assert len(mail.outbox) == 2
+
+    acknowledgement_application = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        type_code="NON_HOTEL_NOTIFICATION",
+        name="Notification acknowledgement property",
+    )
+    add_current_documents(
+        acknowledgement_application,
+        document_status=ApplicationDocument.Status.APPROVED,
+    )
+    _, acknowledgement = approve_application(
+        application_id=acknowledgement_application.pk,
+        actor=seeded["officer"],
+    )
+    assert acknowledgement.artifact_kind == License.ArtifactKind.NOTIFICATION_ACKNOWLEDGEMENT
+    assert acknowledgement.expires_at is None
+    assert queue_license_renewal_reminders(on_date=today) == 0
+
+
+def test_expiring_license_appears_in_applicant_action_view(seeded, api_client, settings):
+    settings.LICENSE_RENEWAL_REMINDER_DAYS = [90, 30, 7]
+    application = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        name="Expiring license property",
+    )
+    add_current_documents(application, document_status=ApplicationDocument.Status.APPROVED)
+    _, license_record = approve_application(application_id=application.pk, actor=seeded["officer"])
+    license_record.expires_at = timezone.localdate() + timedelta(days=30)
+    license_record.save(update_fields=["expires_at"])
+
+    api_client.force_authenticate(seeded["applicant"])
+    response = api_client.get("/api/v1/applications/?view=action")
+    assert response.status_code == 200
+    item = next(result for result in response.data["results"] if result["id"] == application.pk)
+    assert item["renewal"] == {
+        "expires_at": license_record.expires_at,
+        "days_remaining": 30,
+        "status": "DUE",
+        "action_required": True,
+    }
+    assert response.data["summary"]["needs_action"] >= 1
 
 
 def test_session_csrf_login_bootstrap_and_logout(seeded, settings):

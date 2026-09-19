@@ -197,6 +197,10 @@ The bounded authentication extension adds applicant registration, email activati
 
 The model/API/UI, redacted outbox/retry delivery handling, localized templates, and automated acceptance checks are implemented as specified in `docs/security/email-identity-notifications.md`. Password reset uses the same SMTP configuration and remains limited to active, verified accounts.
 
+## Implemented Extension: Licence Renewal Reminders (S4)
+
+The email worker scans approved hotel licences and queues idempotent reminders at configurable pre-expiry thresholds. The applicant dashboard includes due and expired licences in its action view and links to the protected printable licence. This extension does not implement an online renewal application, alter an issued expiry date, or treat a non-hotel notification acknowledgement as a licence.
+
 ## Scope-change Rule
 
 A feature enters the MVP only if it is required to complete or protect the happy path, a Must Have acceptance check, or a documented security/accessibility constraint. Otherwise record it as a follow-up rather than expanding the implementation during the Hackathon.

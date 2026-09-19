@@ -25,6 +25,7 @@ const response = {
       applicant_action_required: false,
       waiting_since: null,
       requirements: { required: 5, approved: 0, current_uploads: 2, complete_for_submission: false },
+      renewal: null,
       updated_at: '2026-09-19T05:00:00Z',
     },
     {
@@ -38,6 +39,7 @@ const response = {
       applicant_action_required: false,
       waiting_since: null,
       requirements: { required: 5, approved: 5, current_uploads: 5, complete_for_submission: true },
+      renewal: null,
       updated_at: '2026-09-18T05:00:00Z',
     },
   ],
@@ -68,6 +70,7 @@ describe('applicant dashboard', () => {
         { path: '/applications/:id/edit', name: 'application-edit', component: Page },
         { path: '/applications/:id/review', name: 'application-review', component: Page },
         { path: '/applications/:id/tracking', name: 'application-tracking', component: Page },
+        { path: '/applications/:id/license', name: 'application-license', component: Page },
       ],
     })
     vi.stubGlobal(
@@ -93,6 +96,63 @@ describe('applicant dashboard', () => {
     await wrapper.get('select#application-filter').setValue('all')
     await flushPromises()
     expect(wrapper.text()).toContain('Approved stay')
+    wrapper.unmount()
+  })
+
+  it('shows an expiring license as an applicant action and links to the license', async () => {
+    i18n.global.locale.value = 'en'
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const auth = useAuthStore()
+    auth.user = {
+      id: 1,
+      email: 'applicant@example.test',
+      display_name: 'Demo applicant',
+      role: 'APPLICANT',
+      local_authority: null,
+    }
+    auth.initialized = true
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/applications', name: 'application-list', component: ApplicationListView },
+        { path: '/classification/:step', name: 'classification-step', component: Page },
+        { path: '/applications/:id/license', name: 'application-license', component: Page },
+        { path: '/applications/:id/tracking', name: 'application-tracking', component: Page },
+      ],
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        status: 200,
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: vi.fn().mockResolvedValue({
+          count: 1,
+          next: null,
+          previous: null,
+          summary: { needs_action: 1, in_progress: 0, approved: 1, total: 1 },
+          results: [{
+            ...response.results[1],
+            renewal: {
+              expires_at: '2026-10-20',
+              days_remaining: 30,
+              status: 'DUE',
+              action_required: true,
+            },
+          }],
+        }),
+      }),
+    )
+    await router.push('/applications')
+    await router.isReady()
+    const wrapper = mount(ApplicationListView, { global: { plugins: [pinia, i18n, router] } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Your license expires in 30 days')
+    const renewalLink = wrapper.get('a[href="/applications/2/license"]')
+    expect(renewalLink.text()).toContain('View license and renewal details')
+    expect(wrapper.text()).not.toContain('Current documents: 5 of 5 required')
     wrapper.unmount()
   })
 })

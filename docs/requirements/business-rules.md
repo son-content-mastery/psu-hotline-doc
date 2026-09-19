@@ -193,6 +193,8 @@ The UI maps codes to translated human language and computes wait duration from s
 - Editing a later fee schedule cannot change an issued license.
 - `NON_HOTEL_NOTIFICATION` has no fee and produces a printable notification acknowledgement with an `ACK-YYYY-NNNNN` number rather than a hotel license. Its fee, validity, and expiry fields remain null.
 - `REQUIRES_LICENSE_REVIEW` and `OUT_OF_SCOPE` cannot produce a decision artifact until a supported pathway is assigned.
+- Approved hotel licences are eligible for configurable pre-expiry reminders (90, 30, and 7 days by default). Each licence/threshold pair is queued at most once, and a late first scan does not replay thresholds already passed.
+- Renewal reminders are informational: they do not extend expiry, create a replacement licence, change application status, or apply to notification acknowledgements. Expired licences remain visible as applicant actions and require contact with the responsible authority.
 
 ## 11. Permissions
 

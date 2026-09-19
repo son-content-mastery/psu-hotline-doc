@@ -391,7 +391,11 @@
       "nextRevision": "Next: correct the requested documents",
       "nextSubmit": "Next: review and submit the application",
       "nextPrepare": "Next: continue preparing the application",
-      "documentProgress": "Current documents: {current} of {total} required"
+      "documentProgress": "Current documents: {current} of {total} required",
+      "renewalDue": "Your license expires in {count} days. Contact the responsible authority to prepare for renewal.",
+      "renewalToday": "Your license expires today. Contact the responsible authority about renewal.",
+      "renewalExpired": "Your license expired on {date}. Contact the responsible authority before continuing operations.",
+      "renewalAction": "View license and renewal details"
     }
   },
   "submission": {

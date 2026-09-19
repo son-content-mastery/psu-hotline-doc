@@ -13,6 +13,13 @@ def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
 
 
+def env_positive_int_list(name: str, default: str) -> list[int]:
+    values = {int(item) for item in env_list(name, default)}
+    if not values or any(value <= 0 for value in values):
+        raise ValueError(f"{name} must contain one or more positive integers")
+    return sorted(values, reverse=True)
+
+
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-local-development-key-change-me")
 DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,backend,testserver")
@@ -149,6 +156,9 @@ EMAIL_OUTBOX_MAX_ATTEMPTS = int(os.getenv("EMAIL_OUTBOX_MAX_ATTEMPTS", "5"))
 EMAIL_OUTBOX_RETRY_BASE_SECONDS = int(os.getenv("EMAIL_OUTBOX_RETRY_BASE_SECONDS", "60"))
 EMAIL_OUTBOX_POLL_SECONDS = int(os.getenv("EMAIL_OUTBOX_POLL_SECONDS", "30"))
 WORKFLOW_NOTIFICATION_EMAIL_ENABLED = env_bool("WORKFLOW_NOTIFICATION_EMAIL_ENABLED", True)
+LICENSE_RENEWAL_REMINDERS_ENABLED = env_bool("LICENSE_RENEWAL_REMINDERS_ENABLED", True)
+LICENSE_RENEWAL_REMINDER_DAYS = env_positive_int_list("LICENSE_RENEWAL_REMINDER_DAYS", "90,30,7")
+LICENSE_RENEWAL_SCAN_SECONDS = int(os.getenv("LICENSE_RENEWAL_SCAN_SECONDS", "3600"))
 EXPECTED_LOCAL_AUTHORITY_COUNT = int(os.getenv("EXPECTED_LOCAL_AUTHORITY_COUNT", "19"))
 
 SPECTACULAR_SETTINGS = {

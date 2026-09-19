@@ -566,7 +566,7 @@ The catalog is imported from the pinned Thailand Geography JSON snapshot documen
 
 **Permission:** `APPLICANT`; results are always owner-scoped.
 
-**Request example:** `GET /api/v1/applications/?view=action&page=1`. `view` accepts `action`, `in_progress`, `completed`, or `all`; the exact `status` filter remains available for API clients.
+**Request example:** `GET /api/v1/applications/?view=action&page=1`. `view` accepts `action`, `in_progress`, `completed`, or `all`; the exact `status` filter remains available for API clients. The action view also includes an approved hotel licence whose expiry is within the configured reminder window or has passed.
 
 **Success**
 
@@ -597,11 +597,14 @@ The catalog is imported from the pinned Thailand Geography JSON snapshot documen
         "current_uploads": 5,
         "complete_for_submission": false
       },
+      "renewal": null,
       "updated_at": "2026-09-19T06:30:00Z"
     }
   ]
 }
 ```
+
+For an approved hotel licence the item also contains `renewal` with `expires_at`, signed integer `days_remaining`, `status` (`UPCOMING`, `DUE`, or `EXPIRED`), and `action_required`. A negative day count denotes an expired licence. Other applications and non-hotel notification acknowledgements return `null`.
 
 **Important errors:** `401 AUTHENTICATION_REQUIRED`; `403 PERMISSION_DENIED`; `400 VALIDATION_ERROR` for an unknown filter/status. Another applicant's records can never appear, including through filtering.
 

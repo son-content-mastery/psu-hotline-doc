@@ -21,7 +21,9 @@ const previousPage = ref<string | null>(null)
 const summary = ref<ApplicantApplicationSummary | null>(null)
 
 function needsAction(application: ApplicationListItem): boolean {
-  return application.applicant_action_required || ['DRAFT', 'READY_TO_SUBMIT'].includes(application.status)
+  return application.applicant_action_required
+    || ['DRAFT', 'READY_TO_SUBMIT'].includes(application.status)
+    || Boolean(application.renewal?.action_required)
 }
 
 function inProgress(application: ApplicationListItem): boolean {
@@ -74,6 +76,9 @@ async function load(url?: string): Promise<void> {
 }
 
 function actionRoute(application: ApplicationListItem) {
+  if (application.renewal?.action_required) {
+    return { name: 'application-license', params: { id: application.id } }
+  }
   return {
     name: applicantApplicationDestination(application.status),
     params: { id: application.id },
@@ -81,10 +86,28 @@ function actionRoute(application: ApplicationListItem) {
 }
 
 function actionLabel(application: ApplicationListItem): string {
+  if (application.renewal?.action_required) return t('application.dashboard.renewalAction')
   return t(
     ['DRAFT', 'READY_TO_SUBMIT'].includes(application.status)
       ? 'application.continueApplication'
       : 'application.trackApplication',
+  )
+}
+
+function actionMessage(application: ApplicationListItem): string {
+  if (application.renewal?.action_required) {
+    if (application.renewal.status === 'EXPIRED') {
+      return t('application.dashboard.renewalExpired', { date: formatDate(application.renewal.expires_at, locale.value) })
+    }
+    if (application.renewal.days_remaining === 0) return t('application.dashboard.renewalToday')
+    return t('application.dashboard.renewalDue', { count: application.renewal.days_remaining })
+  }
+  return t(
+    application.status === 'REVISION_REQUIRED'
+      ? 'application.dashboard.nextRevision'
+      : application.status === 'READY_TO_SUBMIT'
+        ? 'application.dashboard.nextSubmit'
+        : 'application.dashboard.nextPrepare',
   )
 }
 
@@ -171,17 +194,9 @@ onMounted(load)
             </span>
           </div>
           <p v-if="needsAction(application)" class="mt-4 rounded-xl bg-amber-50 p-3 font-bold text-amber-950">
-            {{
-              t(
-                application.status === 'REVISION_REQUIRED'
-                  ? 'application.dashboard.nextRevision'
-                  : application.status === 'READY_TO_SUBMIT'
-                    ? 'application.dashboard.nextSubmit'
-                    : 'application.dashboard.nextPrepare',
-              )
-            }}
+            {{ actionMessage(application) }}
           </p>
-          <p v-if="needsAction(application)" class="mt-3 text-sm font-semibold text-slate-700">
+          <p v-if="needsAction(application) && !application.renewal?.action_required" class="mt-3 text-sm font-semibold text-slate-700">
             {{ t('application.dashboard.documentProgress', {
               current: application.requirements.current_uploads,
               total: application.requirements.required,

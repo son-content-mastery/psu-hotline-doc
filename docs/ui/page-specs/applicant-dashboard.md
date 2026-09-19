@@ -15,11 +15,11 @@ This remains a compact application overview, not a complex analytics dashboard. 
 3. One filter for needs action, in progress, completed, or all.
 4. Application cards ordered with actionable work first and recent updates next.
 
-Each card shows reference state, accommodation name, localized status, database-provided property type, responsible LocalAuthority, last update, and one next-step primary action. Draft/ready/revision cards also show current document progress, a plain-language next step, and a secondary action to edit accommodation details. Draft/ready editing may update the responsible authority and classification answers; revision editing keeps those two workflow-routing inputs locked. The server re-evaluates classification and the checklist after eligible answer changes. Color and icons supplement but never replace status text.
+Each card shows reference state, accommodation name, localized status, database-provided property type, responsible LocalAuthority, last update, and one next-step primary action. Draft/ready/revision cards also show current document progress, a plain-language next step, and a secondary action to edit accommodation details. An approved hotel licence inside the configured renewal window, or already expired, returns to the action view with remaining/elapsed days and a primary link to the protected licence details; it does not show irrelevant upload progress. Draft/ready editing may update the responsible authority and classification answers; revision editing keeps those two workflow-routing inputs locked. The server re-evaluates classification and the checklist after eligible answer changes. Color and icons supplement but never replace status text.
 
 ## API data
 
-`GET /api/v1/applications/` supplies the type, responsible authority, current stage, applicant-action flag, requirement counts, timestamps, and unpaginated owner-scoped summary counts. The selected dashboard view is applied server-side before pagination. Vue follows `next`/`previous` links and does not infer workflow permission or retrieve applications individually to construct the list.
+`GET /api/v1/applications/` supplies the type, responsible authority, current stage, applicant-action flag, requirement counts, nullable renewal summary, timestamps, and unpaginated owner-scoped summary counts. The selected dashboard view is applied server-side before pagination. Vue follows `next`/`previous` links and does not infer workflow permission or retrieve applications individually to construct the list.
 
 ## Accessibility and responsiveness
 

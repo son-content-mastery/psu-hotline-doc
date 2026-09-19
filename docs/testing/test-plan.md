@@ -255,6 +255,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** unique outbox rows target only the applicant and documented responsible-authority officers; rollback queues nothing; email contains no attachments, free-text reasons, or personal records; SMTP failure does not roll back workflow; retries use bounded backoff and a redacted error class; and a real non-production Gmail smoke test accepts one message without exposing credentials.
 
+### TC-29 — Licence renewal reminders are timely and idempotent
+
+**Layer:** Backend scheduling/outbox tests plus applicant dashboard component test.
+
+**Given** an approved hotel licence with an active verified owner and configured reminder thresholds
+
+**When** the scan crosses a threshold, repeats, later crosses a nearer threshold, or encounters a non-hotel acknowledgement
+
+**Then** one email is queued per applicable licence/threshold, a repeated scan creates no duplicate, the message exposes no address/documents, the acknowledgement is skipped, and due or expired hotel licences appear in the owner-scoped action view with a link to protected licence details.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:

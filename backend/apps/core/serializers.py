@@ -334,6 +334,13 @@ class RequirementsSummaryOutputSerializer(serializers.Serializer):
     complete_for_submission = serializers.BooleanField()
 
 
+class LicenseRenewalSummaryOutputSerializer(serializers.Serializer):
+    expires_at = serializers.DateField()
+    days_remaining = serializers.IntegerField()
+    status = serializers.ChoiceField(choices=["UPCOMING", "DUE", "EXPIRED"])
+    action_required = serializers.BooleanField()
+
+
 class ApplicantApplicationListItemOutputSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     reference_number = serializers.CharField(allow_null=True)
@@ -345,6 +352,7 @@ class ApplicantApplicationListItemOutputSerializer(serializers.Serializer):
     applicant_action_required = serializers.BooleanField()
     waiting_since = serializers.DateTimeField(allow_null=True)
     requirements = RequirementsSummaryOutputSerializer()
+    renewal = LicenseRenewalSummaryOutputSerializer(allow_null=True)
     updated_at = serializers.DateTimeField()
 
 

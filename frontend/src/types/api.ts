@@ -237,6 +237,12 @@ export interface ApplicationListItem {
   property_type: PropertyType | null
   responsible_authority: LocalAuthority | null
   requirements: RequirementsSummary
+  renewal: {
+    expires_at: string
+    days_remaining: number
+    status: 'UPCOMING' | 'DUE' | 'EXPIRED'
+    action_required: boolean
+  } | null
   updated_at: string
 }
 

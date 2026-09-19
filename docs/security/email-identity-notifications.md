@@ -52,6 +52,7 @@ Emails are transactional prompts, not the source of workflow truth. The in-app s
 | Application resubmitted | Applicant; active officers in the responsible authority | Confirm receipt; alert the review queue |
 | Application approved | Applicant | Confirm approval and link to the protected printable artifact |
 | Application rejected | Applicant | Confirm the decision and link to the protected history/details |
+| Hotel licence approaches expiry | Active, verified applicant | State the expiry date and link to the protected licence/renewal guidance |
 
 Do not send an email for every upload or every individual document review. Bundle those changes into the application-level revision or resubmission event to avoid noise and conflicting instructions.
 
@@ -71,6 +72,8 @@ Security and account-recovery mail cannot be disabled by a user. A later prefere
 The email service must be called only after the related database transaction commits. A workflow action must not roll back because Gmail is temporarily unavailable.
 
 The implementation uses a small database-backed outbox processed first by an `on_commit` delivery attempt and then by a polling management-command worker for due retries. Each record has a stable event key, recipient user, template code, locale, attempt count, next-attempt time, sent time, and redacted last error class. The event key prevents duplicate mail when an API request is retried. Retry uses bounded exponential backoff and ends in an operator-visible failed state; no infinite retry loop is allowed.
+
+The same worker scans approved hotel licences on its configured interval. It queues at most one message per licence and configured reminder threshold (90, 30, and 7 days by default). Starting the worker late sends only the nearest currently applicable threshold rather than replaying missed mail. Notification acknowledgements have no expiry and are excluded. Expired licences remain visible as applicant actions in the service, but the worker does not send a recurring post-expiry email.
 
 Direct synchronous SMTP from a request is acceptable only for local demonstration. It is not sufficient for production workflow notification because a process failure after commit can lose the message.
 
@@ -102,4 +105,5 @@ The implementation is accepted when automated tests and a real-provider smoke te
 7. transaction rollback queues no email, request retries do not create duplicates, and temporary SMTP failure is retried without rolling back the workflow action;
 8. templates contain no attachments or prohibited sensitive data and links use the trusted frontend base;
 9. Thai/English fallback, keyboard-accessible activation/resend UI, and clear expiry/error states pass UI checks; and
-10. Gmail delivery is smoke-tested with a non-production account without exposing the App Password in Git, logs, screenshots, or handoff notes.
+10. renewal scanning excludes notification acknowledgements and is idempotent per licence/threshold; and
+11. Gmail delivery is smoke-tested with a non-production account without exposing the App Password in Git, logs, screenshots, or handoff notes.

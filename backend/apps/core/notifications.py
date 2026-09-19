@@ -12,7 +12,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
 from .exceptions import DomainError
-from .models import Application, AuditLog, EmailOutbox, User
+from .models import Application, AuditLog, EmailOutbox, License, User
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,10 @@ SUBJECTS = {
     EmailOutbox.Template.APPLICATION_REJECTED: {
         "th": "มีผลการพิจารณาคำขอ HoTLinE Doc",
         "en": "HoTLinE Doc application decision",
+    },
+    EmailOutbox.Template.LICENSE_EXPIRY_REMINDER: {
+        "th": "แจ้งเตือนวันหมดอายุใบอนุญาต HoTLinE Doc",
+        "en": "HoTLinE Doc license expiry reminder",
     },
 }
 
@@ -191,6 +195,47 @@ def queue_application_event(application, template_code, status_history_id):
     return queued
 
 
+def _renewal_threshold(expires_at, on_date):
+    days_remaining = (expires_at - on_date).days
+    if days_remaining < 0:
+        return None
+    eligible = [threshold for threshold in settings.LICENSE_RENEWAL_REMINDER_DAYS if days_remaining <= threshold]
+    return min(eligible) if eligible else None
+
+
+def queue_license_renewal_reminders(*, on_date=None):
+    """Queue at most one due reminder per license and configured threshold."""
+    if not settings.LICENSE_RENEWAL_REMINDERS_ENABLED:
+        return 0
+    on_date = on_date or timezone.localdate()
+    latest_due_date = on_date + timedelta(days=max(settings.LICENSE_RENEWAL_REMINDER_DAYS))
+    licenses = (
+        License.objects.filter(
+            artifact_kind=License.ArtifactKind.HOTEL_LICENSE,
+            application__status=Application.Status.APPROVED,
+            expires_at__gte=on_date,
+            expires_at__lte=latest_due_date,
+            application__property__owner__is_active=True,
+            application__property__owner__email_verified_at__isnull=False,
+        )
+        .select_related("application__property__owner")
+        .order_by("expires_at", "id")
+    )
+    created_count = 0
+    for license_record in licenses:
+        threshold = _renewal_threshold(license_record.expires_at, on_date)
+        if threshold is None:
+            continue
+        _, created = queue_email(
+            template_code=EmailOutbox.Template.LICENSE_EXPIRY_REMINDER,
+            recipient=license_record.application.property.owner,
+            event_identifier=f"license:{license_record.pk}:threshold:{threshold}",
+            application=license_record.application,
+        )
+        created_count += int(created)
+    return created_count
+
+
 def _render_message(entry):
     locale = entry.locale if entry.locale in {User.Language.THAI, User.Language.ENGLISH} else User.Language.THAI
     if entry.template_code == EmailOutbox.Template.ACCOUNT_ACTIVATION:
@@ -225,7 +270,32 @@ def _render_message(entry):
         application = entry.application
         if application is None:
             raise ValueError("Workflow email requires an application")
-        if entry.recipient.role == User.Role.LOCAL_OFFICER:
+        if entry.template_code == EmailOutbox.Template.LICENSE_EXPIRY_REMINDER:
+            try:
+                license_record = application.license
+            except License.DoesNotExist:
+                return None
+            if (
+                license_record.artifact_kind != License.ArtifactKind.HOTEL_LICENSE
+                or license_record.expires_at is None
+                or application.status != Application.Status.APPROVED
+            ):
+                return None
+            days_remaining = (license_record.expires_at - timezone.localdate()).days
+            if days_remaining < 0:
+                message = (
+                    f"ใบอนุญาตหมดอายุเมื่อ {license_record.expires_at.isoformat()} กรุณาติดต่อหน่วยงานที่รับผิดชอบ"
+                    if locale == User.Language.THAI
+                    else f"The license expired on {license_record.expires_at.isoformat()}. Contact the responsible authority."
+                )
+            else:
+                message = (
+                    f"ใบอนุญาตจะหมดอายุวันที่ {license_record.expires_at.isoformat()} (เหลือ {days_remaining} วัน) กรุณาเตรียมการต่ออายุ"
+                    if locale == User.Language.THAI
+                    else f"The license expires on {license_record.expires_at.isoformat()} ({days_remaining} days remaining). Prepare for renewal."
+                )
+            action_url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/applications/{application.pk}/license"
+        elif entry.recipient.role == User.Role.LOCAL_OFFICER:
             action_url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/officer/applications/{application.pk}"
         elif entry.template_code == EmailOutbox.Template.APPLICATION_APPROVED:
             action_url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/applications/{application.pk}/license"
@@ -236,7 +306,11 @@ def _render_message(entry):
             {
                 "display_name": entry.recipient.display_name,
                 "reference_number": application.reference_number or f"#{application.pk}",
-                "message": WORKFLOW_MESSAGES[entry.template_code][locale],
+                "message": (
+                    message
+                    if entry.template_code == EmailOutbox.Template.LICENSE_EXPIRY_REMINDER
+                    else WORKFLOW_MESSAGES[entry.template_code][locale]
+                ),
                 "action_url": action_url,
                 "locale": locale,
             },
