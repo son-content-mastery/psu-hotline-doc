@@ -583,7 +583,36 @@
     "decisionSuccessRejected": "The application was rejected with the recorded reason.",
     "decisionError": "The application decision could not be recorded. Refresh and check the current status.",
     "approvalBlocked": "Approval is available only when every required current document is approved and the classification is resolved.",
-    "reviewLoadError": "This application is unavailable or you do not have access to it."
+    "reviewLoadError": "This application is unavailable or you do not have access to it.",
+    "assistanceTitle": "Request central guidance",
+    "assistanceIntro": "Use a controlled question when an unusual case needs province-level guidance.",
+    "assistancePrivacy": "Only the selected topic and a structured case snapshot are shared. Names, contact details, addresses, files, application IDs, and local authority are excluded.",
+    "assistanceQuestion": "Guidance topic",
+    "assistanceSelect": "Select a topic",
+    "assistanceSubmit": "Send privacy-safe snapshot",
+    "assistanceSending": "Sending request…",
+    "assistanceCreated": "The central-guidance request was sent without personal data.",
+    "assistanceError": "The central-guidance request could not be sent.",
+    "assistanceQuestionRequired": "Select the topic that needs guidance.",
+    "assistanceReference": "Guidance reference {reference}"
+  },
+  "assistance": {
+    "questions": {
+      "CLASSIFICATION_AMBIGUITY": "Classification ambiguity",
+      "REQUIREMENT_APPLICABILITY": "Whether a document requirement applies",
+      "WORKFLOW_EXCEPTION": "Unusual workflow case",
+      "POLICY_INTERPRETATION": "Policy interpretation"
+    },
+    "status": {
+      "OPEN": "Awaiting guidance",
+      "RESOLVED": "Guidance recorded"
+    },
+    "resolutions": {
+      "FOLLOW_CURRENT_RULES": "Proceed under the current published rules",
+      "REQUEST_MORE_EVIDENCE": "Request additional supporting evidence",
+      "ESCALATE_OFFLINE": "Escalate through the official offline channel",
+      "NO_CENTRAL_DECISION": "The snapshot is insufficient for a central decision"
+    }
   },
   "caseLibrary": {
     "open": "Open case library and FAQs",
@@ -641,6 +670,22 @@
     "workloadDecisions": "Application decisions",
     "workloadTotal": "Total actions",
     "workloadPrivacy": "References rotate monthly and reveal no name, email, user ID, or authority. Use this to understand workload balance, not to rank performance.",
+    "assistanceEyebrow": "Structured escalation",
+    "assistanceTitle": "Requests for central guidance",
+    "assistanceIntro": "Review controlled, privacy-safe snapshots from local officers without opening an individual application.",
+    "assistanceError": "Central-guidance requests could not be loaded or updated.",
+    "assistanceEmpty": "There are no central-guidance requests.",
+    "assistanceReference": "Guidance reference {reference}",
+    "assistanceType": "Property type code",
+    "assistanceCapacity": "Capacity snapshot",
+    "assistanceCapacityValue": "{rooms} rooms / {guests} guests",
+    "assistanceChecklist": "Document snapshot",
+    "assistanceChecklistValue": "{approved} of {required} required documents approved",
+    "assistanceResolution": "Structured guidance",
+    "assistanceSelectResolution": "Select guidance",
+    "assistanceResolve": "Record guidance",
+    "assistanceResolving": "Recording guidance…",
+    "assistancePrivacy": "The snapshot excludes applicant, property, address, contact, file, application ID, application reference, officer, and local-authority identity.",
     "asOf": "Data as of {date}",
     "refresh": "Refresh data",
     "refreshing": "Refreshing all summary figures…",

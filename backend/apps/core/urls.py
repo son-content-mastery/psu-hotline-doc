@@ -84,5 +84,16 @@ urlpatterns = [
         views.OfficerRejectView.as_view(),
         name="officer-reject",
     ),
+    path(
+        "officer/applications/<int:pk>/central-assistance/",
+        views.OfficerCentralAssistanceView.as_view(),
+        name="officer-central-assistance",
+    ),
     path("central/summary/", views.CentralSummaryView.as_view(), name="central-summary"),
+    path("central/assistance/", views.CentralAssistanceListView.as_view(), name="central-assistance-list"),
+    path(
+        "central/assistance/<uuid:token>/resolve/",
+        views.CentralAssistanceResolveView.as_view(),
+        name="central-assistance-resolve",
+    ),
 ]

@@ -74,12 +74,37 @@ describe('central overview', () => {
     i18n.global.locale.value = 'en'
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({
+      vi.fn().mockImplementation((url: string) => Promise.resolve({
         status: 200,
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: vi.fn().mockResolvedValue(summary),
-      }),
+        json: vi.fn().mockResolvedValue(
+          url === '/api/v1/central/assistance/'
+            ? {
+                results: [
+                  {
+                    reference: '8a81388b-e8a0-43d5-af38-61d359f36574',
+                    question_code: 'WORKFLOW_EXCEPTION',
+                    status: 'OPEN',
+                    snapshot: {
+                      property_type_code: 'TYPE_1',
+                      classification_outcome: 'TYPE_1',
+                      rooms: 8,
+                      max_guests: 16,
+                      has_restaurant: false,
+                      application_status: 'UNDER_REVIEW',
+                      required_documents: 5,
+                      approved_documents: 4,
+                    },
+                    resolution_code: null,
+                    requested_at: '2026-09-19T05:00:00Z',
+                    resolved_at: null,
+                  },
+                ],
+              }
+            : summary,
+        ),
+      })),
     )
     const wrapper = mount(CentralOverviewView, { attachTo: document.body, global: { plugins: [i18n] } })
     await flushPromises()
@@ -96,6 +121,8 @@ describe('central overview', () => {
     expect(wrapper.text()).toContain('Total unusually old applications')
     expect(wrapper.text()).toContain('OFF-ABC12345')
     expect(wrapper.text()).toContain('References rotate monthly')
+    expect(wrapper.text()).toContain('Requests for central guidance')
+    expect(wrapper.text()).toContain('Unusual workflow case')
     expect(wrapper.text()).not.toContain('officer@example')
     expect(wrapper.text()).toContain('Patong Municipality')
     expect(wrapper.findAll('#authority-table tbody tr')).toHaveLength(5)

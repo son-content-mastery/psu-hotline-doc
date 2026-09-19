@@ -115,7 +115,7 @@ The backend owns:
 - backend-generated references, fees, and licenses;
 - opaque-token public licence verification and server-generated QR images with an allow-listed response;
 - transactions, status history, and immutable audit records;
-- aggregate central reporting with history-derived stage timing, unusually-old-work signals, and threshold-suppressed rotating workload pseudonyms; and
+- aggregate central reporting with history-derived stage timing, unusually-old-work signals, threshold-suppressed rotating workload pseudonyms, and a separate controlled PII-free guidance queue; and
 - applicant registration, signed email activation, transactional email outbox creation; and
 - Django Admin for Super Admin/master-data work.
 
@@ -238,7 +238,7 @@ Database constraints are a backstop, not a substitute for readable domain valida
 ## Security Boundaries
 
 - Authentication identifies the actor; backend authorization filters every protected resource.
-- Applicants are owner-scoped, officers authority-scoped, central officers aggregate-read-only, and Super Admin uses Django Admin.
+- Applicants are owner-scoped, officers authority-scoped, central officers have aggregate reads plus controlled guidance-record resolution (never individual application access), and Super Admin uses Django Admin.
 - Uploads receive defense-in-depth validation and are served through authorized backend access for the MVP.
 - Secrets come from environment variables and no real PII belongs in demo data.
 - Audit actor and timestamps are server-derived.

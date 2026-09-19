@@ -4,7 +4,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .models import DocumentReview, ThaiSubdistrict, User
+from .models import CentralAssistanceRequest, DocumentReview, ThaiSubdistrict, User
 
 
 class StrictSerializer(serializers.Serializer):
@@ -178,6 +178,14 @@ class ReasonSerializer(StrictSerializer):
 
 class ApprovalSerializer(StrictSerializer):
     note = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+
+
+class CentralAssistanceRequestSerializer(StrictSerializer):
+    question_code = serializers.ChoiceField(choices=CentralAssistanceRequest.QuestionCode.choices)
+
+
+class CentralAssistanceResolutionSerializer(StrictSerializer):
+    resolution_code = serializers.ChoiceField(choices=CentralAssistanceRequest.ResolutionCode.choices)
 
 
 # Explicit response schemas keep drf-spectacular aligned with the richer MVP payloads.

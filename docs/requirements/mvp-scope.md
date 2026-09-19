@@ -26,7 +26,7 @@ When time is constrained, prioritize correct user flow, end-to-end operation, da
 | --- | --- | --- |
 | `APPLICANT` | Classify, manage an owned property/application, upload, submit, correct documents, track, print an approved license/reference | May access only owned properties and applications |
 | `LOCAL_OFFICER` | Inspect assigned applications and documents; approve, request revision, or reject with a reason | May access only applications in the officer's `LocalAuthority` |
-| `CENTRAL_OFFICER` | View province-wide aggregate counts and breakdowns | Cannot decide or mutate individual applications in the MVP |
+| `CENTRAL_OFFICER` | View province-wide aggregates and answer controlled privacy-safe guidance requests | Cannot retrieve or mutate individual applications |
 | `SUPER_ADMIN` | Manage users and master data through Django Admin | Not displayed as a public-homepage role |
 
 ## Must-have Capabilities
@@ -124,6 +124,13 @@ For externally issued items, show database-managed issuing agency, applicable re
 
 - Derive average elapsed hours per non-terminal workflow stage from immutable server-timestamped status history; do not accept timing input from clients.
 - Report the count of applications that have remained in their current stage for at least a configurable threshold (seven days by default), with an aggregate stage breakdown.
+
+### S5B — Privacy-safe Central Guidance (implemented optional capability)
+
+- A local officer may request central guidance only while an in-scope application is under local review.
+- The request is a controlled topic plus an immutable structured snapshot; it excludes names, contacts, addresses, files, database/application identifiers, application reference, officer identity, and authority identity.
+- A central officer selects a controlled guidance response. This does not change the application, review a document, or replace the local officer's statutory decision.
+- Creation and resolution create audit events; only one open request is allowed per application.
 - Return no individual application, applicant, property, officer, or free-text details in timing analytics. These metrics identify process bottlenecks and do not rank people.
 
 ### S6 — Pseudonymous Workload (implemented optional capability)
@@ -138,7 +145,7 @@ For externally issued items, show database-managed issuing agency, applicable re
 - Show total, waiting review, waiting for applicant revision, and approved counts.
 - Break down totals by property type, `LocalAuthority`, and current stage.
 - Use counters, simple tables/bars, and an accessible schematic heat grid covering all configured LocalAuthorities including zero-count areas. A geographic boundary map is outside scope until official jurisdiction polygons are validated.
-- Treat the central role as read-only aggregation for the MVP.
+- Keep central access aggregate-only except for the controlled S5B guidance workflow; never expose individual application detail or direct application transitions.
 
 ## Master and Demo Data
 

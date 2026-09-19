@@ -37,6 +37,7 @@ from .models import (
     ApplicationRequirement,
     ApplicationStatusHistory,
     CaseLibraryArticle,
+    CentralAssistanceRequest,
     ClassificationRule,
     DocumentReview,
     DocumentPreflight,
@@ -60,6 +61,8 @@ from .serializers import (
     ApplicationCreateSerializer,
     ApplicationPatchSerializer,
     ApprovalSerializer,
+    CentralAssistanceRequestSerializer,
+    CentralAssistanceResolutionSerializer,
     ClassificationInputSerializer,
     DocumentReviewSerializer,
     EmptySerializer,
@@ -1501,6 +1504,10 @@ class OfficerApplicationDetailView(ContractAPIView):
                 "documents": grouped_documents,
                 "all_required_documents_approved": state["required"] > 0 and state["approved"] == state["required"],
                 "allowed_actions": officer_allowed_actions(application),
+                "central_assistance": [
+                    central_assistance_data(item)
+                    for item in application.central_assistance_requests.all()
+                ],
             }
         )
 
@@ -1760,6 +1767,112 @@ def anonymous_workload_analytics():
         "suppressed": False,
         "rows": rows,
     }
+
+
+def central_assistance_data(item):
+    return {
+        "reference": str(item.reference_token),
+        "question_code": item.question_code,
+        "status": item.status,
+        "snapshot": {
+            "property_type_code": item.property_type_code_snapshot or None,
+            "classification_outcome": item.classification_outcome_snapshot,
+            "rooms": item.rooms_snapshot,
+            "max_guests": item.max_guests_snapshot,
+            "has_restaurant": item.restaurant_snapshot,
+            "application_status": item.application_status_snapshot,
+            "required_documents": item.required_documents_snapshot,
+            "approved_documents": item.approved_documents_snapshot,
+        },
+        "resolution_code": item.resolution_code or None,
+        "requested_at": item.requested_at,
+        "resolved_at": item.resolved_at,
+    }
+
+
+class OfficerCentralAssistanceView(ContractAPIView):
+    permission_classes = [IsLocalOfficer]
+    serializer_class = CentralAssistanceRequestSerializer
+
+    def post(self, request, pk):
+        application = get_object_or_404(officer_applications(request.user), pk=pk)
+        if application.status not in {
+            Application.Status.SUBMITTED,
+            Application.Status.UNDER_REVIEW,
+            Application.Status.RESUBMITTED,
+        }:
+            raise DomainError(
+                "ASSISTANCE_NOT_AVAILABLE",
+                "Central assistance is available only while the application is under local review.",
+                http_status=status.HTTP_409_CONFLICT,
+            )
+        serializer = CentralAssistanceRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if application.central_assistance_requests.filter(status=CentralAssistanceRequest.Status.OPEN).exists():
+            raise DomainError(
+                "ASSISTANCE_ALREADY_OPEN",
+                "This application already has an open central-assistance request.",
+                http_status=status.HTTP_409_CONFLICT,
+            )
+        state = requirement_state(application)
+        with transaction.atomic():
+            item = CentralAssistanceRequest.objects.create(
+                application=application,
+                requested_by=request.user,
+                question_code=serializer.validated_data["question_code"],
+                property_type_code_snapshot=(
+                    application.confirmed_property_type.code if application.confirmed_property_type else ""
+                ),
+                classification_outcome_snapshot=application.classification_outcome_snapshot,
+                rooms_snapshot=application.rooms_snapshot,
+                max_guests_snapshot=application.max_guests_snapshot,
+                restaurant_snapshot=application.restaurant_snapshot,
+                application_status_snapshot=application.status,
+                required_documents_snapshot=state["required"],
+                approved_documents_snapshot=state["approved"],
+            )
+            audit_event(actor=request.user, action="CENTRAL_ASSISTANCE_REQUESTED", obj=item)
+        return Response(central_assistance_data(item), status=status.HTTP_201_CREATED)
+
+
+class CentralAssistanceListView(ContractAPIView):
+    permission_classes = [IsCentralOfficer]
+
+    def get(self, request):
+        queryset = CentralAssistanceRequest.objects.all()
+        requested_status = request.query_params.get("status")
+        if requested_status:
+            if requested_status not in CentralAssistanceRequest.Status.values:
+                raise DomainError("INVALID_ASSISTANCE_STATUS", "Unknown assistance status.")
+            queryset = queryset.filter(status=requested_status)
+        return Response({"results": [central_assistance_data(item) for item in queryset[:100]]})
+
+
+class CentralAssistanceResolveView(ContractAPIView):
+    permission_classes = [IsCentralOfficer]
+    serializer_class = CentralAssistanceResolutionSerializer
+
+    def post(self, request, token):
+        serializer = CentralAssistanceResolutionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            item = get_object_or_404(
+                CentralAssistanceRequest.objects.select_for_update(),
+                reference_token=token,
+            )
+            if item.status != CentralAssistanceRequest.Status.OPEN:
+                raise DomainError(
+                    "ASSISTANCE_ALREADY_RESOLVED",
+                    "This assistance request is already resolved.",
+                    http_status=status.HTTP_409_CONFLICT,
+                )
+            item.status = CentralAssistanceRequest.Status.RESOLVED
+            item.resolution_code = serializer.validated_data["resolution_code"]
+            item.resolved_by = request.user
+            item.resolved_at = timezone.now()
+            item.save(update_fields=["status", "resolution_code", "resolved_by", "resolved_at"])
+            audit_event(actor=request.user, action="CENTRAL_ASSISTANCE_RESOLVED", obj=item)
+        return Response(central_assistance_data(item))
 
 
 class CentralSummaryView(ContractAPIView):

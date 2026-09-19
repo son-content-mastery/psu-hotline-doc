@@ -6,7 +6,7 @@
 - Authentication: `CENTRAL_OFFICER`
 - Main task: understand province-wide application volume and bottlenecks.
 
-The MVP is an aggregate overview, not a business-intelligence suite. Central Officers must not make decisions on individual applications. Backend summary/report permission is mandatory; frontend routing is not authorization.
+The MVP is an aggregate overview, not a business-intelligence suite. Central Officers must not make decisions on individual applications. The optional structured-guidance queue is separate from application decision authority. Backend permission is mandatory; frontend routing is not authorization.
 
 ## Entry and scope
 
@@ -54,6 +54,10 @@ The grid must explicitly say that it is not a geographic boundary map. Do not dr
 Show average wait per non-terminal stage with the number of contributing applications, followed by one unusually-old-work total and aggregate stage breakdown using the configured day threshold. Explain that the values come from server status history, are aggregate-only, and are intended to locate process bottlenecks rather than rank officers. Do not link these values to individual cases.
 
 Below it, show the current monthly pseudonymous workload table only when the backend clears the minimum-group threshold. Use the rotating `OFF-` reference and counts for document reviews, application decisions, and total actions. When suppressed, explain the privacy threshold without showing the exact contributor count. Never add names, authority, sortable performance ranks, or links to officer records.
+
+## Structured Central Guidance
+
+Show the controlled guidance queue as compact cards below analytics. Each card uses a shortened opaque reference, an allowlisted topic, classification/capacity/workflow/checklist snapshot, and either a controlled resolution selector or recorded result. Do not show or link an application ID/reference, applicant, property, address, contact, file, officer, or authority. The UI has no free-text field. Resolving guidance must not change the linked application.
 
 ## Ordering and formatting
 

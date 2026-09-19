@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import InlineAlert from '@/components/InlineAlert.vue'
 import { api } from '@/services/api'
-import type { CentralSummary } from '@/types/api'
+import type { CentralAssistanceRequest, CentralAssistanceResolution, CentralSummary } from '@/types/api'
 import { stageKey } from '@/utils/domain'
 import { formatDate, formatNumber } from '@/utils/format'
 
@@ -20,6 +20,17 @@ const selectedAuthorityId = ref<number | null>(null)
 const showAllAuthorities = ref(false)
 const authorityPreviewLimit = 5
 const dialogElement = ref<HTMLElement | null>(null)
+const assistanceRequests = ref<CentralAssistanceRequest[]>([])
+const assistanceLoading = ref(true)
+const assistanceError = ref(false)
+const assistanceSelections = ref<Record<string, CentralAssistanceResolution | ''>>({})
+const assistanceResolving = ref<string | null>(null)
+const resolutionOptions: CentralAssistanceResolution[] = [
+  'FOLLOW_CURRENT_RULES',
+  'REQUEST_MORE_EVIDENCE',
+  'ESCALATE_OFFLINE',
+  'NO_CENTRAL_DECISION',
+]
 
 const counters = computed(() => {
   if (!summary.value) return []
@@ -130,6 +141,37 @@ async function load(isRefresh = false): Promise<void> {
   }
 }
 
+async function loadAssistance(): Promise<void> {
+  assistanceLoading.value = true
+  assistanceError.value = false
+  try {
+    const response = await api.get<{ results: CentralAssistanceRequest[] }>('/api/v1/central/assistance/')
+    assistanceRequests.value = response.results
+  } catch {
+    assistanceError.value = true
+  } finally {
+    assistanceLoading.value = false
+  }
+}
+
+async function resolveAssistance(item: CentralAssistanceRequest): Promise<void> {
+  const resolutionCode = assistanceSelections.value[item.reference]
+  if (!resolutionCode) return
+  assistanceResolving.value = item.reference
+  try {
+    const resolved = await api.post<CentralAssistanceRequest>(
+      `/api/v1/central/assistance/${item.reference}/resolve/`,
+      { resolution_code: resolutionCode },
+    )
+    const index = assistanceRequests.value.findIndex((candidate) => candidate.reference === item.reference)
+    if (index >= 0) assistanceRequests.value[index] = resolved
+  } catch {
+    assistanceError.value = true
+  } finally {
+    assistanceResolving.value = null
+  }
+}
+
 function propertyLabel(item: CentralSummary['by_property_type'][number]): string {
   if (item.name) return item.name
   if (['UNCONFIRMED', 'REQUIRES_LICENSE_REVIEW'].includes(item.code)) return t('central.classificationPending')
@@ -176,7 +218,10 @@ function handleDialogKeydown(event: KeyboardEvent): void {
 }
 
 watch(locale, () => load(true))
-onMounted(() => load())
+onMounted(() => {
+  void load()
+  void loadAssistance()
+})
 </script>
 
 <template>
@@ -289,6 +334,51 @@ onMounted(() => load())
           <p class="mt-4 text-sm text-slate-600">{{ t('central.workloadPrivacy') }}</p>
         </div>
         <p class="mt-5 text-sm text-slate-600">{{ t('central.analyticsPrivacy') }}</p>
+      </section>
+
+      <section class="mt-9 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7" aria-labelledby="central-assistance-title">
+        <div class="max-w-3xl">
+          <p class="text-sm font-black uppercase tracking-wide text-brand-700">{{ t('central.assistanceEyebrow') }}</p>
+          <h2 id="central-assistance-title" class="mt-2 text-2xl font-black text-slate-950">{{ t('central.assistanceTitle') }}</h2>
+          <p class="mt-3 text-slate-700">{{ t('central.assistanceIntro') }}</p>
+        </div>
+        <p v-if="assistanceLoading" class="mt-5" aria-live="polite">{{ t('common.loading') }}</p>
+        <InlineAlert v-else-if="assistanceError" tone="error" class="mt-5 max-w-3xl">
+          {{ t('central.assistanceError') }}
+          <button type="button" class="ml-2 font-bold underline" @click="loadAssistance">{{ t('common.actions.retry') }}</button>
+        </InlineAlert>
+        <p v-else-if="assistanceRequests.length === 0" class="mt-5 text-slate-600">{{ t('central.assistanceEmpty') }}</p>
+        <ul v-else class="mt-6 grid gap-4 lg:grid-cols-2" role="list">
+          <li v-for="item in assistanceRequests" :key="item.reference" class="rounded-2xl border border-slate-200 p-5">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 class="font-black">{{ t(`assistance.questions.${item.question_code}`) }}</h3>
+                <p class="mt-1 text-sm text-slate-600">{{ t('central.assistanceReference', { reference: item.reference.slice(0, 8).toUpperCase() }) }}</p>
+              </div>
+              <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold">{{ t(`assistance.status.${item.status}`) }}</span>
+            </div>
+            <dl class="definition-grid mt-4">
+              <dt>{{ t('central.assistanceType') }}</dt>
+              <dd>{{ item.snapshot.property_type_code ?? t('common.notAvailable') }}</dd>
+              <dt>{{ t('central.assistanceCapacity') }}</dt>
+              <dd>{{ t('central.assistanceCapacityValue', { rooms: item.snapshot.rooms, guests: item.snapshot.max_guests }) }}</dd>
+              <dt>{{ t('central.assistanceChecklist') }}</dt>
+              <dd>{{ t('central.assistanceChecklistValue', { approved: item.snapshot.approved_documents, required: item.snapshot.required_documents }) }}</dd>
+            </dl>
+            <p v-if="item.resolution_code" class="mt-4 font-semibold">{{ t(`assistance.resolutions.${item.resolution_code}`) }}</p>
+            <form v-else class="mt-4" @submit.prevent="resolveAssistance(item)">
+              <label class="field-label" :for="`assistance-resolution-${item.reference}`">{{ t('central.assistanceResolution') }}</label>
+              <select :id="`assistance-resolution-${item.reference}`" v-model="assistanceSelections[item.reference]" class="field-input" required>
+                <option value="" disabled>{{ t('central.assistanceSelectResolution') }}</option>
+                <option v-for="option in resolutionOptions" :key="option" :value="option">{{ t(`assistance.resolutions.${option}`) }}</option>
+              </select>
+              <button type="submit" class="button-primary mt-4" :disabled="assistanceResolving === item.reference">
+                {{ t(assistanceResolving === item.reference ? 'central.assistanceResolving' : 'central.assistanceResolve') }}
+              </button>
+            </form>
+          </li>
+        </ul>
+        <p class="mt-5 text-sm text-slate-600">{{ t('central.assistancePrivacy') }}</p>
       </section>
 
       <section class="mt-9 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-7" aria-labelledby="authority-heat-title">

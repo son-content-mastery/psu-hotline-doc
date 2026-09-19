@@ -1226,9 +1226,39 @@ For a non-hotel notification, `artifact_kind` is `NOTIFICATION_ACKNOWLEDGEMENT`,
 
 **Important errors:** `400 REASON_REQUIRED`; `404 NOT_FOUND`; `409 INVALID_STATUS_TRANSITION`; `409 LICENSE_ALREADY_ISSUED`. An approved/licensed application cannot be rejected through this endpoint.
 
+### `POST /api/v1/officer/applications/{id}/central-assistance/`
+
+**Purpose:** Ask the central office for structured guidance without sharing an individual application.
+
+**Permission:** Verified `LOCAL_OFFICER` assigned to the application's authority. The application must be `SUBMITTED`, `UNDER_REVIEW`, or `RESUBMITTED`, and must not already have an open request.
+
+**Body:** `{ "question_code": "CLASSIFICATION_AMBIGUITY|REQUIREMENT_APPLICABILITY|WORKFLOW_EXCEPTION|POLICY_INTERPRETATION" }`
+
+**Success:** `201` with an opaque UUID `reference`, status, controlled question, structured classification/capacity/workflow/checklist snapshot, nullable controlled resolution, and timestamps. The response never includes an application ID/reference, applicant, property name/address/contact, file, officer, or authority identity.
+
+**Errors:** `404 NOT_FOUND`, `409 ASSISTANCE_NOT_AVAILABLE`, or `409 ASSISTANCE_ALREADY_OPEN`.
+
 ---
 
 ## Central overview
+
+### `GET /api/v1/central/assistance/`
+
+**Purpose:** List up to 100 privacy-safe guidance records newest first. Optional `?status=OPEN|RESOLVED` filter.
+
+**Permission:** `CENTRAL_OFFICER` only.
+
+**Success:** `{ "results": [...] }` using the same PII-free projection. This separate queue does not grant access to the linked application.
+
+### `POST /api/v1/central/assistance/{reference}/resolve/`
+
+**Purpose:** Record structured central guidance without changing the application.
+
+**Permission:** `CENTRAL_OFFICER` only.
+
+**Body:** `{ "resolution_code": "FOLLOW_CURRENT_RULES|REQUEST_MORE_EVIDENCE|ESCALATE_OFFLINE|NO_CENTRAL_DECISION" }`
+
+**Success:** `200` with the resolved privacy-safe record. A second resolution returns `409 ASSISTANCE_ALREADY_RESOLVED`. Resolution creates an immutable audit event but no application status transition.
 
 ### `GET /api/v1/central/summary/`
 
@@ -1367,6 +1397,6 @@ For `NOTIFICATION_ACKNOWLEDGEMENT`, `expires_at` and `fee` are null and the prin
 1. Clients never choose an application status, reference number, audit timestamp, document version, fee snapshot, or license number.
 2. Every workflow transition is validated centrally and creates status history plus an immutable audit record in one database transaction.
 3. Applicant ownership and local-authority scope apply to querysets, detail lookups, nested resources, and file downloads.
-4. Central access is aggregate-only for the MVP.
+4. Central access to applications is aggregate-only; the separate S5B queue exposes and mutates only controlled guidance records with no individual identifier or free text.
 5. Current database rules and requirements are authoritative; client-cached classification/checklist data is advisory.
 6. Demo checklist and contact content must remain visibly marked as mock/unverified until officially validated.

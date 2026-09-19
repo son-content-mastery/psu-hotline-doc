@@ -8,7 +8,7 @@ The MVP must:
 
 1. prevent one applicant from reading or changing another applicant's data;
 2. prevent a local officer from discovering or accessing applications outside their `LocalAuthority`;
-3. limit central officers to province-wide aggregates, with no individual decisions;
+3. limit central officers to province-wide aggregates and controlled PII-free guidance records, with no individual application decisions;
 4. restrict master-data and user administration to Django Admin;
 5. validate untrusted uploads before making them available;
 6. make workflow decisions and important changes traceable through server-created, immutable audit entries; and
@@ -83,6 +83,7 @@ The application role is a controlled server-side value:
 | Advance/reject application | No | Same authority only, valid transition | No | Django Admin |
 | Read individual license | Own | Same authority when operationally needed | No | Django Admin |
 | Province aggregate summary | No | No | Yes, aggregates only | Django Admin |
+| Central guidance request | No | Own authority application | List/resolve PII-free record | Django Admin |
 | Manage users/master data/rules/fees | No | No | No | Django Admin |
 
 Permission checks require both the correct role and the correct object scope. A role alone never grants access to every object of that type.
@@ -116,7 +117,7 @@ This restriction applies to queue counts, searches, detail views, documents, dow
 
 ### Central boundary
 
-`CENTRAL_OFFICER` can call only aggregate reporting endpoints in the MVP. Summary queries group across Phuket without returning applicant identity, exact address, files, free-text review reasons, or application detail links. Central officers cannot reuse local-officer endpoints and cannot approve, reject, or request revision.
+`CENTRAL_OFFICER` can call aggregate reporting endpoints and the separate structured guidance queue. Summary queries group across Phuket without returning applicant identity, exact address, files, free-text review reasons, or application detail links. Guidance records contain only allowlisted topic/response codes and a capacity/classification/workflow/checklist snapshot; they omit every application, person, property, officer, and authority identifier. Central officers cannot reuse local-officer endpoints and cannot approve, reject, request revision, or open the source application.
 
 ### Admin boundary
 

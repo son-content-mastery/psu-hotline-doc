@@ -325,6 +325,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** the small group has no rows or exact contributor count; the eligible group shows only monthly rotating `OFF-` references and review/decision counts; changing the period changes a person's reference; and no user ID, name, email, or authority is present.
 
+### TC-36 — Central guidance is structured, scoped, and PII-free
+
+**Layer:** Backend model/API/RBAC/privacy tests plus officer and central component tests.
+
+**Given** an application under review, its assigned local officer, another authority's officer, and a central officer
+
+**When** the assigned officer creates a controlled guidance request and the central officer lists and resolves it
+
+**Then** only one open request is allowed; the other officer receives scoped `404`; the central projection contains no person/property/address/contact/file/application/officer/authority identifier or free text; the resolution uses an allowlisted code; audit events are written; and the linked application status is unchanged.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:

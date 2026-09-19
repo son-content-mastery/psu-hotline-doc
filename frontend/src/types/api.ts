@@ -381,6 +381,37 @@ export interface OfficerDocument extends ApplicationDocument {
 
 export type OfficerAllowedAction = 'REVIEW_DOCUMENTS' | 'REQUEST_REVISION' | 'APPROVE' | 'REJECT'
 
+export type CentralAssistanceQuestion =
+  | 'CLASSIFICATION_AMBIGUITY'
+  | 'REQUIREMENT_APPLICABILITY'
+  | 'WORKFLOW_EXCEPTION'
+  | 'POLICY_INTERPRETATION'
+
+export type CentralAssistanceResolution =
+  | 'FOLLOW_CURRENT_RULES'
+  | 'REQUEST_MORE_EVIDENCE'
+  | 'ESCALATE_OFFLINE'
+  | 'NO_CENTRAL_DECISION'
+
+export interface CentralAssistanceRequest {
+  reference: string
+  question_code: CentralAssistanceQuestion
+  status: 'OPEN' | 'RESOLVED'
+  snapshot: {
+    property_type_code: string | null
+    classification_outcome: string
+    rooms: number
+    max_guests: number
+    has_restaurant: boolean
+    application_status: ApplicationStatus
+    required_documents: number
+    approved_documents: number
+  }
+  resolution_code: CentralAssistanceResolution | null
+  requested_at: string
+  resolved_at: string | null
+}
+
 export interface OfficerApplication {
   id: number
   reference_number: string
@@ -394,6 +425,7 @@ export interface OfficerApplication {
   all_required_documents_approved: boolean
   allowed_actions: OfficerAllowedAction[]
   history?: HistoryEvent[]
+  central_assistance: CentralAssistanceRequest[]
 }
 
 export interface CentralTotals {

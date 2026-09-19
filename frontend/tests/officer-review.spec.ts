@@ -41,6 +41,7 @@ describe('officer application review', () => {
           classification: { outcome: 'TYPE_1', property_type: { code: 'TYPE_1', name: 'Type 1' }, answers: { rooms: 10, guests: 20, has_restaurant: false } },
           all_required_documents_approved: false,
           allowed_actions: ['REVIEW_DOCUMENTS', 'REQUEST_REVISION', 'REJECT'],
+          central_assistance: [],
           history: [
             { id: 1, from_status: 'SUBMITTED', to_status: 'UNDER_REVIEW', occurred_at: '2026-09-18T05:00:00Z', reason: 'Review started' },
           ],

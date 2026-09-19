@@ -228,7 +228,9 @@ All restrictions are enforced in backend querysets/object permissions/domain fun
 - “Waiting for applicant revision” counts `REVISION_REQUIRED`.
 - “Approved” counts `APPROVED`.
 - Breakdowns group by confirmed property type, responsible local authority, and current status/stage, including an explicit “unconfirmed” bucket where appropriate.
-- Central data is read-only in the MVP and contains only fields necessary for aggregates.
+- Central application access remains aggregate-only. The S5B exception permits central officers to resolve a separate controlled guidance record built from a PII-free snapshot; it never grants application-detail or transition authority.
+- Guidance topics and resolutions use server allowlists. Free text, attachments, application IDs/references, applicant/property/address/contact data, officer identity, and authority identity are not accepted or returned.
+- Only one open central-guidance request may exist per application, and a request may be created only during local review.
 - Average stage waits are derived from application creation/status-history intervals and exclude time after terminal completion.
 - “Unusually old” means the current non-terminal stage has not changed for at least `CENTRAL_OVERDUE_THRESHOLD_DAYS` (seven by default). The result is an aggregate count and stage breakdown, not an individual case list.
 - Monthly workload counts include only immutable document reviews and terminal approve/reject status events by local officers. Period references are salted and rotate monthly.

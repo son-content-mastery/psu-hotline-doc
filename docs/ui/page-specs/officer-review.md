@@ -10,6 +10,10 @@
 
 LocalAuthority scope is enforced by the backend on list, detail, file access, review, and application-transition endpoints. Frontend routing and hidden controls are usability measures only. A local officer must never receive or view an application belonging to another LocalAuthority.
 
+## Central guidance
+
+While an application is in local review, show one compact “ขอคำแนะนำจากส่วนกลาง / Request central guidance” section. The officer selects one controlled topic; there is no free-text or attachment input. Explain exactly which structured snapshot is shared and which identity fields are excluded. Show prior request status and the controlled resolution, allow only one open request, and keep all application/document decisions with the local officer.
+
 ## Authentication and entry
 
 The homepage staff CTA opens login before any officer data. After a successful Local Officer login, route to the queue. If an authenticated user lacks this role, show a localized neutral authorization message and a safe destination; never render the queue briefly before redirecting.

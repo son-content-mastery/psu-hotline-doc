@@ -12,6 +12,7 @@ from .models import (
     ApplicationStatusHistory,
     AuditLog,
     CaseLibraryArticle,
+    CentralAssistanceRequest,
     ClassificationRule,
     DocumentReview,
     DocumentType,
@@ -144,6 +145,19 @@ class CaseLibraryArticleAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("slug", "question_th", "question_en", "answer_th", "answer_en")
     list_editable = ("display_order", "is_active")
+
+
+@admin.register(CentralAssistanceRequest)
+class CentralAssistanceRequestAdmin(admin.ModelAdmin):
+    list_display = ("reference_token", "question_code", "status", "requested_at", "resolved_at")
+    list_filter = ("question_code", "status")
+    readonly_fields = tuple(field.name for field in CentralAssistanceRequest._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(PropertyTypeDocumentRequirement)

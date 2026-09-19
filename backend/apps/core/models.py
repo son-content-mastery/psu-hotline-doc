@@ -627,6 +627,79 @@ class CaseLibraryArticle(models.Model):
         return self.slug
 
 
+class CentralAssistanceRequest(models.Model):
+    class QuestionCode(models.TextChoices):
+        CLASSIFICATION_AMBIGUITY = "CLASSIFICATION_AMBIGUITY", "Classification ambiguity"
+        REQUIREMENT_APPLICABILITY = "REQUIREMENT_APPLICABILITY", "Document requirement applicability"
+        WORKFLOW_EXCEPTION = "WORKFLOW_EXCEPTION", "Workflow exception"
+        POLICY_INTERPRETATION = "POLICY_INTERPRETATION", "Policy interpretation"
+
+    class Status(models.TextChoices):
+        OPEN = "OPEN", "Open"
+        RESOLVED = "RESOLVED", "Resolved"
+
+    class ResolutionCode(models.TextChoices):
+        FOLLOW_CURRENT_RULES = "FOLLOW_CURRENT_RULES", "Follow the current rules"
+        REQUEST_MORE_EVIDENCE = "REQUEST_MORE_EVIDENCE", "Request more evidence"
+        ESCALATE_OFFLINE = "ESCALATE_OFFLINE", "Escalate through the official offline channel"
+        NO_CENTRAL_DECISION = "NO_CENTRAL_DECISION", "Central office cannot decide from this snapshot"
+
+    reference_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    application = models.ForeignKey(
+        Application,
+        on_delete=models.PROTECT,
+        related_name="central_assistance_requests",
+    )
+    requested_by = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="central_assistance_requests",
+    )
+    question_code = models.CharField(max_length=40, choices=QuestionCode.choices)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+    property_type_code_snapshot = models.CharField(max_length=40, blank=True)
+    classification_outcome_snapshot = models.CharField(max_length=50)
+    rooms_snapshot = models.PositiveIntegerField()
+    max_guests_snapshot = models.PositiveIntegerField()
+    restaurant_snapshot = models.BooleanField()
+    application_status_snapshot = models.CharField(max_length=30, choices=Application.Status.choices)
+    required_documents_snapshot = models.PositiveIntegerField()
+    approved_documents_snapshot = models.PositiveIntegerField()
+    resolution_code = models.CharField(max_length=40, choices=ResolutionCode.choices, blank=True)
+    resolved_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="resolved_central_assistance_requests",
+    )
+    requested_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-requested_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["application"],
+                condition=Q(status="OPEN"),
+                name="uniq_open_central_assistance_per_app",
+            ),
+            models.CheckConstraint(
+                check=(
+                    Q(status="OPEN", resolution_code="", resolved_by__isnull=True, resolved_at__isnull=True)
+                    | Q(
+                        status="RESOLVED",
+                        resolution_code__gt="",
+                        resolved_by__isnull=False,
+                        resolved_at__isnull=False,
+                    )
+                ),
+                name="central_assistance_resolution_state",
+            ),
+        ]
+        indexes = [models.Index(fields=["status", "-requested_at"], name="central_help_status_idx")]
+
+
 class License(models.Model):
     class ArtifactKind(models.TextChoices):
         HOTEL_LICENSE = "HOTEL_LICENSE", "Hotel license"

@@ -8,6 +8,8 @@ import DocumentPreflight from '@/components/DocumentPreflight.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { api, ApiError } from '@/services/api'
 import type {
+  CentralAssistanceQuestion,
+  CentralAssistanceRequest,
   DocumentStatus,
   License,
   OfficerAllowedAction,
@@ -42,6 +44,24 @@ const decisionReason = ref('')
 const decisionErrorKey = ref('')
 const decisionWorking = ref(false)
 const issuedLicense = ref<Pick<License, 'license_number' | 'artifact_kind'> | null>(null)
+const assistanceQuestion = ref<CentralAssistanceQuestion | ''>('')
+const assistanceWorking = ref(false)
+const assistanceError = ref('')
+
+const assistanceRequests = computed(() => application.value?.central_assistance ?? [])
+const hasOpenAssistance = computed(() => assistanceRequests.value.some((item) => item.status === 'OPEN'))
+const canRequestAssistance = computed(
+  () =>
+    Boolean(application.value) &&
+    ['SUBMITTED', 'UNDER_REVIEW', 'RESUBMITTED'].includes(application.value!.status) &&
+    !hasOpenAssistance.value,
+)
+const assistanceOptions: CentralAssistanceQuestion[] = [
+  'CLASSIFICATION_AMBIGUITY',
+  'REQUIREMENT_APPLICABILITY',
+  'WORKFLOW_EXCEPTION',
+  'POLICY_INTERPRETATION',
+]
 
 const sortedDocuments = computed(() =>
   [...(application.value?.documents ?? [])].sort((a, b) => {
@@ -227,6 +247,28 @@ function roleLabel(role: Role): string {
 
 function uploaderLabel(documentItem: OfficerDocument): string {
   return `${documentItem.uploaded_by.display_name} · ${roleLabel(documentItem.uploaded_by.role ?? documentItem.uploader_role)}`
+}
+
+async function requestCentralAssistance(): Promise<void> {
+  if (!assistanceQuestion.value) {
+    assistanceError.value = t('officer.assistanceQuestionRequired')
+    return
+  }
+  assistanceWorking.value = true
+  assistanceError.value = ''
+  try {
+    const created = await api.post<CentralAssistanceRequest>(
+      `/api/v1/officer/applications/${applicationId.value}/central-assistance/`,
+      { question_code: assistanceQuestion.value },
+    )
+    if (application.value) application.value.central_assistance.unshift(created)
+    assistanceQuestion.value = ''
+    announcement.value = t('officer.assistanceCreated')
+  } catch {
+    assistanceError.value = t('officer.assistanceError')
+  } finally {
+    assistanceWorking.value = false
+  }
 }
 
 watch(locale, () => load(true))
@@ -546,6 +588,49 @@ onMounted(load)
               }}
             </button>
           </div>
+        </form>
+      </section>
+
+      <section class="card mt-9 max-w-4xl" aria-labelledby="central-assistance-heading">
+        <h2 id="central-assistance-heading" class="text-2xl font-black">{{ t('officer.assistanceTitle') }}</h2>
+        <p class="mt-3 text-slate-700">{{ t('officer.assistanceIntro') }}</p>
+        <InlineAlert tone="info" class="mt-4">{{ t('officer.assistancePrivacy') }}</InlineAlert>
+
+        <ul v-if="assistanceRequests.length" class="mt-5 space-y-3" role="list">
+          <li v-for="item in assistanceRequests" :key="item.reference" class="rounded-2xl border border-slate-200 p-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="font-black">{{ t(`assistance.questions.${item.question_code}`) }}</p>
+                <p class="mt-1 text-sm text-slate-600">{{ t('officer.assistanceReference', { reference: item.reference.slice(0, 8).toUpperCase() }) }}</p>
+              </div>
+              <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold">
+                {{ t(`assistance.status.${item.status}`) }}
+              </span>
+            </div>
+            <p v-if="item.resolution_code" class="mt-3 font-semibold">
+              {{ t(`assistance.resolutions.${item.resolution_code}`) }}
+            </p>
+          </li>
+        </ul>
+
+        <form v-if="canRequestAssistance" class="mt-5" @submit.prevent="requestCentralAssistance">
+          <label class="field-label" for="central-assistance-question">{{ t('officer.assistanceQuestion') }}</label>
+          <select
+            id="central-assistance-question"
+            v-model="assistanceQuestion"
+            class="field-input"
+            :aria-invalid="Boolean(assistanceError)"
+            @change="assistanceError = ''"
+          >
+            <option value="" disabled>{{ t('officer.assistanceSelect') }}</option>
+            <option v-for="option in assistanceOptions" :key="option" :value="option">
+              {{ t(`assistance.questions.${option}`) }}
+            </option>
+          </select>
+          <p v-if="assistanceError" class="field-error" role="alert">{{ assistanceError }}</p>
+          <button type="submit" class="button-secondary mt-4" :disabled="assistanceWorking">
+            {{ t(assistanceWorking ? 'officer.assistanceSending' : 'officer.assistanceSubmit') }}
+          </button>
         </form>
       </section>
 

@@ -27,6 +27,7 @@ from apps.core.models import (
     ApplicationStatusHistory,
     AuditLog,
     CaseLibraryArticle,
+    CentralAssistanceRequest,
     ClassificationRule,
     DocumentType,
     DocumentReview,
@@ -1047,6 +1048,89 @@ def test_anonymous_workload_rotates_references_and_suppresses_small_groups(seede
         officers[0].pk,
         "2026-10",
     )
+
+
+def test_central_assistance_uses_controlled_pii_free_snapshots_and_rbac(seeded, api_client):
+    application = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        type_code="TYPE_1",
+        name="Sensitive property name",
+    )
+    api_client.force_authenticate(seeded["officer"])
+    created = api_client.post(
+        f"/api/v1/officer/applications/{application.id}/central-assistance/",
+        {"question_code": "REQUIREMENT_APPLICABILITY"},
+        format="json",
+    )
+    assert created.status_code == 201
+    assert set(created.data) == {
+        "reference",
+        "question_code",
+        "status",
+        "snapshot",
+        "resolution_code",
+        "requested_at",
+        "resolved_at",
+    }
+    assert created.data["status"] == "OPEN"
+    assert "Sensitive property name" not in str(created.data)
+    assert application.reference_number not in str(created.data)
+    duplicate = api_client.post(
+        f"/api/v1/officer/applications/{application.id}/central-assistance/",
+        {"question_code": "WORKFLOW_EXCEPTION"},
+        format="json",
+    )
+    assert duplicate.status_code == 409
+    assert duplicate.data["error"]["code"] == "ASSISTANCE_ALREADY_OPEN"
+
+    other_authority = LocalAuthority.objects.exclude(pk=seeded["patong"].pk).first()
+    other_officer = User.objects.create_user(
+        email="other-help@example.test",
+        password="pass",
+        display_name="Other authority officer",
+        role=User.Role.LOCAL_OFFICER,
+        local_authority=other_authority,
+        email_verified_at=timezone.now(),
+    )
+    api_client.force_authenticate(other_officer)
+    assert (
+        api_client.post(
+            f"/api/v1/officer/applications/{application.id}/central-assistance/",
+            {"question_code": "WORKFLOW_EXCEPTION"},
+            format="json",
+        ).status_code
+        == 404
+    )
+
+    api_client.force_authenticate(seeded["central"])
+    listed = api_client.get("/api/v1/central/assistance/?status=OPEN")
+    assert listed.status_code == 200
+    assert listed.data["results"] == [created.data]
+    serialized = str(listed.data).lower()
+    assert "sensitive property" not in serialized
+    assert "@example.test" not in serialized
+    assert seeded["patong"].code.lower() not in serialized
+    assert "application_id" not in listed.data["results"][0]
+    assert "application_reference" not in listed.data["results"][0]
+
+    resolved = api_client.post(
+        f"/api/v1/central/assistance/{created.data['reference']}/resolve/",
+        {"resolution_code": "REQUEST_MORE_EVIDENCE"},
+        format="json",
+    )
+    assert resolved.status_code == 200
+    assert resolved.data["status"] == "RESOLVED"
+    assert resolved.data["resolution_code"] == "REQUEST_MORE_EVIDENCE"
+    assert resolved.data["resolved_at"] is not None
+    assert CentralAssistanceRequest.objects.get().resolved_by == seeded["central"]
+    assert AuditLog.objects.filter(action="CENTRAL_ASSISTANCE_REQUESTED").exists()
+    assert AuditLog.objects.filter(action="CENTRAL_ASSISTANCE_RESOLVED").exists()
+
+    api_client.force_authenticate(seeded["officer"])
+    detail = api_client.get(f"/api/v1/officer/applications/{application.id}/")
+    assert detail.data["central_assistance"][0]["resolution_code"] == "REQUEST_MORE_EVIDENCE"
 
 
 def test_database_driven_checklist_and_external_guidance(seeded, api_client):
