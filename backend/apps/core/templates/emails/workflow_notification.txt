@@ -1,0 +1,17 @@
+{% if locale == "th" %}สวัสดี {{ display_name }}
+
+เลขอ้างอิง: {{ reference_number }}
+{{ message }}
+
+เปิด HoTLinE Doc: {{ action_url }}
+
+อีเมลนี้ไม่มีเอกสารแนบหรือข้อมูลส่วนบุคคล โปรดเข้าสู่ระบบเพื่อดูข้อมูลที่ได้รับอนุญาต
+{% else %}Hello {{ display_name }},
+
+Reference: {{ reference_number }}
+{{ message }}
+
+Open HoTLinE Doc: {{ action_url }}
+
+This email contains no attachments or personal details. Sign in to view authorized information.
+{% endif %}

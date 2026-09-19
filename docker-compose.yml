@@ -37,6 +37,9 @@ services:
       DEMO_PASSWORD: ${DEMO_PASSWORD:-DemoPass123!}
       RUN_DEMO_SEED: ${RUN_DEMO_SEED:-true}
       PASSWORD_RESET_THROTTLE_RATE: ${PASSWORD_RESET_THROTTLE_RATE:-5/hour}
+      REGISTRATION_THROTTLE_RATE: ${REGISTRATION_THROTTLE_RATE:-5/hour}
+      ACTIVATION_THROTTLE_RATE: ${ACTIVATION_THROTTLE_RATE:-5/hour}
+      ACCOUNT_EMAIL_THROTTLE_RATE: ${ACCOUNT_EMAIL_THROTTLE_RATE:-5/hour}
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
       EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
       EMAIL_PORT: ${EMAIL_PORT:-587}
@@ -45,6 +48,11 @@ services:
       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
       EMAIL_TIMEOUT_SECONDS: ${EMAIL_TIMEOUT_SECONDS:-10}
+      ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS: ${ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS:-86400}
+      EMAIL_OUTBOX_MAX_ATTEMPTS: ${EMAIL_OUTBOX_MAX_ATTEMPTS:-5}
+      EMAIL_OUTBOX_RETRY_BASE_SECONDS: ${EMAIL_OUTBOX_RETRY_BASE_SECONDS:-60}
+      EMAIL_OUTBOX_POLL_SECONDS: ${EMAIL_OUTBOX_POLL_SECONDS:-30}
+      WORKFLOW_NOTIFICATION_EMAIL_ENABLED: ${WORKFLOW_NOTIFICATION_EMAIL_ENABLED:-true}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-HoTLinE Doc <noreply@example.test>}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -66,6 +74,24 @@ services:
       timeout: 3s
       retries: 20
       start_period: 30s
+
+  email-worker:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      RUN_DEMO_SEED: "false"
+    command: ["python", "manage.py", "run_email_outbox_worker"]
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
   frontend:
     build:

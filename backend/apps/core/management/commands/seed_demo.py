@@ -345,6 +345,8 @@ class Command(BaseCommand):
             user.is_staff = is_staff
             user.is_superuser = is_superuser
             user.is_active = True
+            user.preferred_language = User.Language.THAI
+            user.email_verified_at = user.email_verified_at or timezone.now()
             user.set_password(password)
             user.full_clean(exclude=["password"])
             user.save()
@@ -360,6 +362,8 @@ class Command(BaseCommand):
         analytics_owner.is_staff = False
         analytics_owner.is_superuser = False
         analytics_owner.is_active = False
+        analytics_owner.preferred_language = User.Language.THAI
+        analytics_owner.email_verified_at = analytics_owner.email_verified_at or timezone.now()
         analytics_owner.set_unusable_password()
         analytics_owner.full_clean(exclude=["password"])
         analytics_owner.save()

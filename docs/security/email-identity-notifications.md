@@ -2,7 +2,7 @@
 
 ## Status and interpretation
 
-This document is the approved follow-up requirement for account activation and transactional email. It is **not yet an implemented capability** unless the API, model, templates, tests, and delivery checks described here are present.
+This document defines the implemented backend contract for account activation and transactional email. The Django model/API, signed activation token, templates, PostgreSQL outbox, polling retry worker, and backend tests are present. The feature is complete end to end only when the matching Vue registration/activation views and frontend tests are also present.
 
 “Authenticate through Gmail” means that HoTLinE Doc keeps its own Django account and sends a single-use email-verification link through Gmail SMTP. Gmail is the delivery provider, not the identity provider. Google OAuth / “Sign in with Google” is a separate future decision and is not implied by this requirement.
 
@@ -28,9 +28,7 @@ The existing password-reset flow remains in scope and uses the same delivery con
 - Disabling an account blocks login immediately. Role, authority, activation, disablement, and email changes create immutable audit entries without storing token values or email bodies.
 - Production administration uses individual accounts. Shared Gmail, officer, or admin credentials are forbidden.
 
-## Planned activation endpoints
-
-These contracts are reserved for the implementation increment and must not be advertised as available before they exist.
+## Activation endpoints
 
 | Endpoint | Purpose | Required behavior |
 | --- | --- | --- |
@@ -71,7 +69,7 @@ Security and account-recovery mail cannot be disabled by a user. A later prefere
 
 The email service must be called only after the related database transaction commits. A workflow action must not roll back because Gmail is temporarily unavailable.
 
-The first implementation may use a small database-backed outbox processed by a management command or worker. Each record has a stable event key, recipient user, template code, locale, attempt count, next-attempt time, sent time, and redacted last error. The event key prevents duplicate mail when an API request is retried. Retry uses bounded exponential backoff and ends in an operator-visible failed state; no infinite retry loop is allowed.
+The implementation uses a small database-backed outbox processed first by an `on_commit` delivery attempt and then by a polling management-command worker for due retries. Each record has a stable event key, recipient user, template code, locale, attempt count, next-attempt time, sent time, and redacted last error class. The event key prevents duplicate mail when an API request is retried. Retry uses bounded exponential backoff and ends in an operator-visible failed state; no infinite retry loop is allowed.
 
 Direct synchronous SMTP from a request is acceptable only for local demonstration. It is not sufficient for production workflow notification because a process failure after commit can lose the message.
 

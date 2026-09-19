@@ -14,7 +14,7 @@ For the Hackathon MVP we intentionally do **not** use:
 - repository/service layers everywhere;
 - Kubernetes;
 - Redis unless a concrete requirement appears;
-- async queues;
+- external queue/broker infrastructure;
 - complex domain frameworks;
 - premature caching; or
 - frontend design-system packages.
@@ -47,7 +47,7 @@ Prefer:
 | Workflow | Central transition map and named backend actions | The workflow grows into many parallel/long-running branches |
 | Audit | Append-only relational rows written in the same transaction | Cross-system audit ingestion becomes a real requirement |
 | Files | Django local/media storage abstraction | A production environment requires durable object storage |
-| Background work | Synchronous request handling | A measured operation cannot complete reliably within request limits |
+| Background work | Database email outbox plus one polling Django worker for approved transactional email; otherwise synchronous requests | Another measured operation needs durable retry or independent scaling |
 | Caching | No application cache | Profiling identifies a stable expensive read and invalidation is defined |
 | Administration | Django Admin | Non-technical external administrators need a dedicated experience |
 | UI components | Semantic local components | Repeated patterns prove a small shared system is valuable |
@@ -115,5 +115,7 @@ If a guardrail must change:
 3. document operational and migration impact;
 4. update this document and `system-overview.md` in the same change; and
 5. add tests that justify the new complexity.
+
+The approved email-activation/workflow-notification increment requires delivery only after a committed workflow action and bounded retry when Gmail is unavailable. A relational `EmailOutbox` plus a polling management-command worker was selected over Redis/Celery or a hosted queue: it reuses PostgreSQL, adds no dependency, preserves idempotency, and can be replaced without changing application workflow data. Tests cover commit scoping, duplicate keys, recipient boundaries, retries, and redacted failures.
 
 Hackathon urgency is not by itself a reason to add infrastructure; it is usually a reason to choose the simplest reliable path.

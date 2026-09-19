@@ -19,6 +19,11 @@ backend (Django REST Framework, port 8000 inside Compose)
   v
 postgres (PostgreSQL, port 5432 inside Compose)
 
+email-worker (same Django image)
+  | polls PostgreSQL EmailOutbox after workflow commit
+  v
+Gmail SMTP / configured email backend
+
 backend -> media_data named volume (MVP uploads)
 postgres -> postgres_data named volume
 ```
@@ -29,6 +34,7 @@ Compose service names are part of the developer contract:
 | --- | --- | --- |
 | `postgres` | PostgreSQL database and health check | `5432` (host exposure may be configurable) |
 | `backend` | Django/DRF API, migrations, seed and tests | `8000` |
+| `email-worker` | Poll due email-outbox rows and perform bounded delivery retries | No host port |
 | `frontend` | Vite/Vue SPA; proxy for `/api` and `/media` | `5173` |
 
 The browser should normally open only `http://localhost:5173`. Vite proxies `/api` and `/media` to `http://backend:8000` inside Compose. This gives the browser a single origin, makes Django session cookies straightforward, and avoids permissive credentialed CORS.
@@ -82,6 +88,9 @@ Expected settings:
 | `DEMO_PASSWORD` | Password assigned by `seed_demo` to demo accounts | Local/demo only; do not enable demo seeding in production. |
 | `RUN_DEMO_SEED` | Run the idempotent demo seed from the Compose backend entrypoint | `true` for the Hackathon demo; set `false` outside demo environments. |
 | `PASSWORD_RESET_THROTTLE_RATE` | Anonymous reset request/confirmation throttle | `5/hour` locally; review with the deployed cache/proxy strategy. |
+| `REGISTRATION_THROTTLE_RATE` | Registration throttle by source | `5/hour`. |
+| `ACTIVATION_THROTTLE_RATE` | Activation/resend throttle by source | `5/hour`. |
+| `ACCOUNT_EMAIL_THROTTLE_RATE` | Registration/resend throttle by hashed normalized email | `5/hour`; raw email is not used in the cache key. |
 | `EMAIL_BACKEND` | Django email delivery backend | Console backend for local demo only; configure an approved SMTP/API backend when deployed. |
 | `EMAIL_HOST` | SMTP server hostname | `smtp.gmail.com` for authenticated Gmail SMTP submission. |
 | `EMAIL_PORT` | SMTP submission port | `587` with STARTTLS. |
@@ -90,6 +99,11 @@ Expected settings:
 | `EMAIL_HOST_USER` | SMTP login name | Full Gmail or Google Workspace email address. |
 | `EMAIL_HOST_PASSWORD` | SMTP secret | Google App Password in ignored `.env`/secret storage; never the normal Google password. |
 | `EMAIL_TIMEOUT_SECONDS` | SMTP connection timeout | `10` seconds locally; prevents a request from hanging indefinitely. |
+| `ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS` | Signed activation-link lifetime | `86400` (24 hours). |
+| `EMAIL_OUTBOX_MAX_ATTEMPTS` | Maximum delivery attempts before terminal failure | `5`. |
+| `EMAIL_OUTBOX_RETRY_BASE_SECONDS` | Base for bounded exponential retry delay | `60`. |
+| `EMAIL_OUTBOX_POLL_SECONDS` | Worker polling interval | `30`. |
+| `WORKFLOW_NOTIFICATION_EMAIL_ENABLED` | Queue documented workflow messages | `true`; does not disable security-critical activation/reset mail. |
 | `DEFAULT_FROM_EMAIL` | Sender identity for password-reset mail | Fictional `example.test` sender locally. |
 | `FRONTEND_BASE_URL` | Trusted base used to build reset links | `http://localhost:5173`; must match the actual browser origin and must not be derived from request headers. |
 | `VITE_API_BASE_URL` | Browser API base | `/api/v1` (relative URL). |
@@ -125,7 +139,7 @@ Do not add quotes or spaces to the App Password value. Restart the backend so Co
 docker compose up -d --force-recreate backend
 ```
 
-Request a password reset for a non-production account and confirm that the message arrives and its link begins with the configured `FRONTEND_BASE_URL`. This smoke test proves current SMTP delivery only; applicant activation and workflow notifications remain the planned increment in `docs/security/email-identity-notifications.md`.
+Request a password reset for a non-production account and confirm that the message arrives and its link begins with the configured `FRONTEND_BASE_URL`. This smoke test proves the SMTP transport. Registration activation and workflow email use the same backend through the database outbox specified in `docs/security/email-identity-notifications.md`.
 
 ## First start with Docker Compose
 
@@ -142,7 +156,7 @@ Then open:
 - Django Admin: `http://localhost:5173/admin/` if `/admin` is also proxied, otherwise `http://localhost:8000/admin/`
 - OpenAPI/schema UI, if enabled: use the backend's documented `/api/schema/` or `/api/docs/` route.
 
-The Compose backend and frontend processes bind to `0.0.0.0` inside their containers. PostgreSQL readiness is checked with `pg_isready`; the backend entrypoint also retries migrations rather than assuming process start means database readiness.
+The Compose backend and frontend processes bind to `0.0.0.0` inside their containers. PostgreSQL readiness is checked with `pg_isready`; the backend and email-worker entrypoints retry migrations rather than assuming process start means database readiness.
 
 For the local Compose demo, the backend entrypoint applies migrations automatically and runs `seed_demo` when `RUN_DEMO_SEED=true`. Both commands remain safe to run explicitly for verification. `seed_demo` is idempotent: rerunning it updates/ensures the known demo records without duplicating 19 authorities, rules, requirements, fee schedules, four workflow examples, or the 36 inactive-owner analytics fixtures used to make all areas visible in the central overview. Set `RUN_DEMO_SEED=false` anywhere demo accounts and fixtures must not be created.
 
@@ -150,7 +164,7 @@ For the local Compose demo, the backend entrypoint applies migrations automatica
 
 ```bash
 docker compose ps
-docker compose logs -f backend frontend
+docker compose logs -f backend email-worker frontend
 docker compose stop
 docker compose start
 docker compose down
@@ -216,6 +230,15 @@ docker compose exec backend python manage.py seed_demo
 ```
 
 The second seed must complete without duplicates or integrity failures.
+
+Process pending mail once for diagnosis, or inspect the long-running worker:
+
+```bash
+docker compose exec backend python manage.py process_email_outbox --limit 50
+docker compose logs email-worker
+```
+
+The worker records only the exception class for a failed delivery and stops retrying after `EMAIL_OUTBOX_MAX_ATTEMPTS`. Do not paste provider responses, tokens, message bodies, or credentials into logs or handoff notes.
 
 ## Local fallback A: host backend/frontend, Compose PostgreSQL
 

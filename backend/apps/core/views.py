@@ -43,7 +43,11 @@ from .models import (
     User,
 )
 from .permissions import IsApplicant, IsCentralOfficer, IsLocalOfficer
+from .notifications import activate_user_from_token, queue_activation_email
 from .serializers import (
+    ActivationCompleteOutputSerializer,
+    ActivationConfirmSerializer,
+    ActivationResendSerializer,
     ApplicationCreateSerializer,
     ApplicationPatchSerializer,
     ApprovalSerializer,
@@ -60,12 +64,16 @@ from .serializers import (
     OfficerApplicationDetailOutputSerializer,
     PaginatedOfficerQueueOutputSerializer,
     ReasonSerializer,
+    RegistrationAcceptedOutputSerializer,
+    RegistrationSerializer,
     RequirementsOutputSerializer,
     SubmitSerializer,
     UploadSerializer,
 )
+from .throttles import AccountEmailRateThrottle
 from .services import (
     approve_application,
+    audit_event,
     capture_requirements,
     current_stage,
     effective_fee,
@@ -422,9 +430,84 @@ class AuthMeView(ContractAPIView):
 
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
-        if request.user.is_authenticated:
+        if request.user.is_authenticated and request.user.email_verified_at is not None:
             return Response({"authenticated": True, "user": user_data(request.user)})
+        if request.user.is_authenticated:
+            logout(request._request)
         return Response({"authenticated": False, "user": None})
+
+
+class RegisterView(ContractAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    serializer_class = RegistrationSerializer
+    throttle_classes = [ScopedRateThrottle, AccountEmailRateThrottle]
+    throttle_scope = "registration"
+
+    @extend_schema(request=RegistrationSerializer, responses={202: RegistrationAcceptedOutputSerializer})
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        values = serializer.validated_data
+        email = values["email"].strip().lower()
+        with transaction.atomic():
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "display_name": values["display_name"],
+                    "role": User.Role.APPLICANT,
+                    "preferred_language": values["language"],
+                    "is_active": True,
+                },
+            )
+            if created:
+                user.set_password(values["password"])
+                user.full_clean(exclude=["password"])
+                user.save()
+                audit_event(actor=user, action="USER_REGISTERED", obj=user)
+            if user.is_active and user.email_verified_at is None:
+                queue_activation_email(user)
+        return Response({"accepted": True}, status=status.HTTP_202_ACCEPTED)
+
+
+class ActivationResendView(ContractAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    serializer_class = ActivationResendSerializer
+    throttle_classes = [ScopedRateThrottle, AccountEmailRateThrottle]
+    throttle_scope = "activation"
+
+    @extend_schema(request=ActivationResendSerializer, responses={202: RegistrationAcceptedOutputSerializer})
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].strip().lower()
+        user = User.objects.filter(
+            email=email,
+            is_active=True,
+            email_verified_at__isnull=True,
+        ).first()
+        if user is not None:
+            queue_activation_email(user)
+        return Response({"accepted": True}, status=status.HTTP_202_ACCEPTED)
+
+
+class ActivationConfirmView(ContractAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    serializer_class = ActivationConfirmSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "activation"
+
+    @extend_schema(request=ActivationConfirmSerializer, responses=ActivationCompleteOutputSerializer)
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        activate_user_from_token(serializer.validated_data["token"])
+        return Response({"activated": True})
 
 
 class LoginView(ContractAPIView):
@@ -447,6 +530,12 @@ class LoginView(ContractAPIView):
             from rest_framework.exceptions import AuthenticationFailed
 
             raise AuthenticationFailed("Invalid credentials.")
+        if user.email_verified_at is None:
+            raise DomainError(
+                "EMAIL_NOT_VERIFIED",
+                "Verify your email before signing in.",
+                http_status=status.HTTP_403_FORBIDDEN,
+            )
         login(request._request, user)
         return Response({"user": user_data(user)})
 
@@ -472,7 +561,11 @@ class PasswordResetRequestView(ContractAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"].strip().lower()
-        user = User.objects.filter(email=email, is_active=True).first()
+        user = User.objects.filter(
+            email=email,
+            is_active=True,
+            email_verified_at__isnull=False,
+        ).first()
         if user and user.has_usable_password():
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)

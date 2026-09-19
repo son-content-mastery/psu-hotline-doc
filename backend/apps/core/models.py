@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Lower
+from django.utils import timezone
 
 
 class LocalAuthority(models.Model):
@@ -44,12 +45,17 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("role", User.Role.SUPER_ADMIN)
+        extra_fields.setdefault("email_verified_at", timezone.now())
         if not extra_fields["is_staff"] or not extra_fields["is_superuser"]:
             raise ValueError("A superuser must have is_staff=True and is_superuser=True")
         return self._create_user(email, password, **extra_fields)
 
 
 class User(AbstractUser):
+    class Language(models.TextChoices):
+        THAI = "th", "Thai"
+        ENGLISH = "en", "English"
+
     class Role(models.TextChoices):
         APPLICANT = "APPLICANT", "Applicant"
         LOCAL_OFFICER = "LOCAL_OFFICER", "Local officer"
@@ -60,6 +66,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     display_name = models.CharField(max_length=255)
     role = models.CharField(max_length=30, choices=Role.choices, default=Role.APPLICANT)
+    preferred_language = models.CharField(max_length=10, choices=Language.choices, default=Language.THAI)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
     local_authority = models.ForeignKey(
         LocalAuthority,
         null=True,
@@ -99,6 +107,16 @@ class User(AbstractUser):
             raise ValidationError({"local_authority": "Only local officers may have an authority."})
         if self.role == self.Role.SUPER_ADMIN and not self.is_staff:
             raise ValidationError({"is_staff": "Super admins must be staff users."})
+
+    def save(self, *args, **kwargs):
+        self.email = self.email.lower().strip()
+        if self.pk:
+            previous_email = type(self).objects.filter(pk=self.pk).values_list("email", flat=True).first()
+            if previous_email is not None and previous_email != self.email:
+                self.email_verified_at = None
+                if kwargs.get("update_fields") is not None:
+                    kwargs["update_fields"] = set(kwargs["update_fields"]) | {"email_verified_at"}
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.email
@@ -575,3 +593,41 @@ class AuditLog(ImmutableEventMixin):
     class Meta:
         ordering = ["-created_at", "-id"]
         indexes = [models.Index(fields=["object_type", "object_id", "-created_at"], name="audit_object_created_idx")]
+
+
+class EmailOutbox(models.Model):
+    class Template(models.TextChoices):
+        ACCOUNT_ACTIVATION = "ACCOUNT_ACTIVATION", "Account activation"
+        APPLICATION_SUBMITTED = "APPLICATION_SUBMITTED", "Application submitted"
+        APPLICATION_REVISION_REQUESTED = "APPLICATION_REVISION_REQUESTED", "Application revision requested"
+        APPLICATION_RESUBMITTED = "APPLICATION_RESUBMITTED", "Application resubmitted"
+        APPLICATION_APPROVED = "APPLICATION_APPROVED", "Application approved"
+        APPLICATION_REJECTED = "APPLICATION_REJECTED", "Application rejected"
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        SENT = "SENT", "Sent"
+        FAILED = "FAILED", "Failed"
+
+    event_key = models.CharField(max_length=255, unique=True)
+    recipient = models.ForeignKey(User, on_delete=models.PROTECT, related_name="email_notifications")
+    application = models.ForeignKey(
+        Application,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="email_notifications",
+    )
+    template_code = models.CharField(max_length=50, choices=Template.choices)
+    locale = models.CharField(max_length=10, choices=User.Language.choices, default=User.Language.THAI)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    attempt_count = models.PositiveIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    last_error_code = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        indexes = [models.Index(fields=["status", "next_attempt_at"], name="email_status_next_idx")]

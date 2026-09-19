@@ -16,6 +16,7 @@ from pypdf.errors import PdfReadError
 from rest_framework import status as http_status
 
 from .exceptions import DomainError
+from .notifications import queue_application_event
 from .models import (
     Application,
     ApplicationDocument,
@@ -25,6 +26,7 @@ from .models import (
     ClassificationRule,
     DocumentReview,
     FeeSchedule,
+    EmailOutbox,
     License,
     PropertyTypeDocumentRequirement,
     User,
@@ -538,6 +540,8 @@ def submit_application(*, application_id, actor):
                     actor=actor,
                     action="APPLICATION_RESUBMITTED",
                 )
+                history_id = result.status_history.order_by("-id").values_list("id", flat=True).first()
+                queue_application_event(result, EmailOutbox.Template.APPLICATION_RESUBMITTED, history_id)
             else:
                 if not application.reference_number:
                     application.reference_number = f"HTL-{now.year}-{application.pk:05d}"
@@ -548,6 +552,8 @@ def submit_application(*, application_id, actor):
                     actor=actor,
                     action="APPLICATION_SUBMITTED",
                 )
+                history_id = result.status_history.order_by("-id").values_list("id", flat=True).first()
+                queue_application_event(result, EmailOutbox.Template.APPLICATION_SUBMITTED, history_id)
     if requirements_changed:
         raise DomainError(
             "REQUIREMENTS_CHANGED",
@@ -630,13 +636,16 @@ def request_application_revision(*, application_id, actor, reason):
             "DOCUMENTS_REJECTED",
             "Rejected required documents prevent a revision cycle; reject the application or record a supported review outcome.",
         )
-    return transition_application(
+    result = transition_application(
         application,
         Application.Status.REVISION_REQUIRED,
         actor=actor,
         action="APPLICATION_REVISION_REQUESTED",
         reason=reason,
     )
+    history_id = result.status_history.order_by("-id").values_list("id", flat=True).first()
+    queue_application_event(result, EmailOutbox.Template.APPLICATION_REVISION_REQUESTED, history_id)
+    return result
 
 
 def _expiry_date(issue_date, years):
@@ -713,6 +722,8 @@ def approve_application(*, application_id, actor, note=""):
         reason=(note or "").strip(),
     )
     audit_event(actor=actor, action=issued_action, obj=license_record)
+    history_id = application.status_history.order_by("-id").values_list("id", flat=True).first()
+    queue_application_event(application, EmailOutbox.Template.APPLICATION_APPROVED, history_id)
     return application, license_record
 
 
@@ -730,13 +741,16 @@ def reject_application(*, application_id, actor, reason):
     if application.status != Application.Status.UNDER_REVIEW:
         raise DomainError("INVALID_STATUS_TRANSITION", "Only an application under review can be rejected.")
     application.rejected_at = timezone.now()
-    return transition_application(
+    result = transition_application(
         application,
         Application.Status.REJECTED,
         actor=actor,
         action="APPLICATION_REJECTED",
         reason=reason,
     )
+    history_id = result.status_history.order_by("-id").values_list("id", flat=True).first()
+    queue_application_event(result, EmailOutbox.Template.APPLICATION_REJECTED, history_id)
+    return result
 
 
 def current_stage(status):

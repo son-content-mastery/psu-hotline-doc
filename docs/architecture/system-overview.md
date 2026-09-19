@@ -20,9 +20,11 @@ flowchart TB
         AdminUI[Django Admin]
         API[Django REST Framework<br/>/api/v1]
         Domain[Backend domain logic<br/>classification · workflow · permissions]
+        EmailWorker[Email outbox worker]
         ORM[Django ORM]
         DB[(PostgreSQL)]
         Media[(Local media storage)]
+        Gmail[Gmail SMTP]
     end
 
     Applicant --> SPA
@@ -34,6 +36,8 @@ flowchart TB
     API --> Domain
     Domain --> ORM
     ORM --> DB
+    EmailWorker -->|poll pending outbox| DB
+    EmailWorker -->|STARTTLS| Gmail
     Domain -->|Django storage interface| Media
 ```
 
@@ -107,6 +111,7 @@ The backend owns:
 - backend-generated references, fees, and licenses;
 - transactions, status history, and immutable audit records;
 - aggregate central reporting; and
+- applicant registration, signed email activation, transactional email outbox creation; and
 - Django Admin for Super Admin/master-data work.
 
 Use DRF serializers for transport validation and representation. Put multi-record invariants or important transitions in small named domain/service functions with `transaction.atomic()`. Do not create a mandatory service/repository wrapper for routine CRUD.
@@ -121,7 +126,12 @@ PostgreSQL stores:
 - requirements, document metadata, version and review history;
 - fee schedules and issued-license snapshots;
 - application status history and audit entries; and
+- email verification time and idempotent email delivery attempts; and
 - constraints that reinforce uniqueness and referential integrity.
+
+### Email outbox worker
+
+The worker is a second process from the same Django image, not a separate service architecture or external queue. Workflow transactions insert one `EmailOutbox` row per event/recipient. An `on_commit` attempt provides prompt delivery; the polling worker retries due rows with bounded exponential backoff. It renders activation tokens and message bodies only at send time, records only a redacted exception class, and never changes application status when delivery fails.
 
 See `docs/database/erd.md` and `docs/database/normalization.md` for the logical data model.
 

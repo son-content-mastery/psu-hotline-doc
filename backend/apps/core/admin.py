@@ -11,6 +11,7 @@ from .models import (
     DocumentReview,
     DocumentType,
     DocumentTypeTranslation,
+    EmailOutbox,
     FeeSchedule,
     IssuingAgency,
     IssuingAgencyTranslation,
@@ -38,12 +39,12 @@ admin.site.has_permission = _super_admin_permission
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     ordering = ("email",)
-    list_display = ("email", "display_name", "role", "local_authority", "is_active", "is_staff")
-    list_filter = ("role", "is_active", "is_staff", "local_authority")
+    list_display = ("email", "display_name", "role", "local_authority", "email_verified_at", "is_active", "is_staff")
+    list_filter = ("role", "preferred_language", "is_active", "is_staff", "local_authority")
     search_fields = ("email", "display_name")
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Profile and role", {"fields": ("display_name", "role", "local_authority")}),
+        ("Profile and role", {"fields": ("display_name", "role", "local_authority", "preferred_language", "email_verified_at")}),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Dates", {"fields": ("last_login", "date_joined")}),
     )
@@ -52,7 +53,7 @@ class UserAdmin(DjangoUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "display_name", "role", "local_authority", "password1", "password2", "is_staff"),
+                "fields": ("email", "display_name", "role", "local_authority", "preferred_language", "email_verified_at", "password1", "password2", "is_staff"),
             },
         ),
     )
@@ -202,6 +203,13 @@ class DocumentReviewAdmin(ImmutableAdmin):
 class AuditLogAdmin(ImmutableAdmin):
     list_display = ("created_at", "actor", "action", "object_type", "object_id", "from_status", "to_status")
     list_filter = ("action", "object_type")
+
+
+@admin.register(EmailOutbox)
+class EmailOutboxAdmin(ImmutableAdmin):
+    list_display = ("created_at", "template_code", "recipient", "status", "attempt_count", "sent_at")
+    list_filter = ("template_code", "status", "locale")
+    search_fields = ("event_key", "recipient__email")
 
 
 @admin.register(License)

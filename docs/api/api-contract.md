@@ -164,6 +164,67 @@ All scoping is applied to backend querysets before object lookup. Out-of-scope o
 
 **Important errors:** None expected for ordinary bootstrap. Server failures use `500 INTERNAL_ERROR` and still must not disclose session details.
 
+### `POST /api/v1/auth/register/`
+
+**Purpose:** Create an applicant account and queue a time-limited email-activation link without allowing public role assignment.
+
+**Permission:** Anonymous. CSRF-protected and throttled by source plus a hashed normalized email key.
+
+```json
+{
+  "display_name": "ผู้ยื่นตัวอย่าง",
+  "email": "applicant@example.test",
+  "password": "user-supplied password",
+  "password_confirmation": "user-supplied password",
+  "language": "th",
+  "terms_accepted": true
+}
+```
+
+**Success — `202 Accepted`**
+
+```json
+{ "accepted": true }
+```
+
+The server always assigns `APPLICANT`, null authority, non-staff, and non-superuser values. Unknown fields—including role, authority, staff, superuser, active, and verification fields—are rejected. A duplicate valid request returns the same response and never overwrites the existing profile or password. New accounts cannot log in until activation succeeds.
+
+**Important errors:** `400 VALIDATION_ERROR` for field, consent, password confirmation, or password-policy failures; `403 CSRF_FAILED`; `429 RATE_LIMITED`.
+
+### `POST /api/v1/auth/activation/resend/`
+
+**Purpose:** Queue another activation message without revealing whether an unverified account exists.
+
+**Permission:** Anonymous. CSRF-protected and throttled by source plus hashed normalized email.
+
+```json
+{ "email": "applicant@example.test" }
+```
+
+Every syntactically valid email receives `202 {"accepted": true}`. Only an active, unverified account creates an outbox record, and requests within the same minute share an idempotency key.
+
+**Important errors:** `400 VALIDATION_ERROR`; `403 CSRF_FAILED`; `429 RATE_LIMITED`.
+
+### `POST /api/v1/auth/activation/confirm/`
+
+**Purpose:** Consume one purpose-specific signed activation token and record server-owned email verification time.
+
+**Permission:** Anonymous. CSRF-protected and throttled.
+
+```json
+{ "token": "signed-token-from-email" }
+```
+
+**Success — `200 OK`**
+
+```json
+{ "activated": true }
+```
+
+The token expires after the configured lifetime and becomes invalid after use or if the account email changes. It is never returned by another API response or stored in the outbox.
+
+**Important errors:** `400 ACTIVATION_INVALID`; `403 CSRF_FAILED`; `429 RATE_LIMITED`.
+
 ### `POST /api/v1/auth/password-reset/`
 
 **Purpose:** Request a time-limited password-reset link without revealing whether an account exists.
@@ -182,7 +243,7 @@ All scoping is applied to backend querysets before object lookup. Out-of-scope o
 { "accepted": true }
 ```
 
-The same response is returned for an unknown, disabled, or active email. For an active account with a usable password, Django sends a link based on configured `FRONTEND_BASE_URL`. Local demo delivery uses the console email backend; production must configure an approved mail provider.
+The same response is returned for an unknown, disabled, unverified, or active verified email. For an active verified account with a usable password, Django sends a link based on configured `FRONTEND_BASE_URL`. Local demo delivery uses the console email backend; production must configure an approved mail provider.
 
 **Important errors:** `400 VALIDATION_ERROR`; `403 CSRF_FAILED`; `429 RATE_LIMITED`.
 

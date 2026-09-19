@@ -30,7 +30,7 @@ The MVP uses Django's authentication system, secure password hashing, and server
 
 Password recovery is a separate anonymous, CSRF-protected flow. The request endpoint always returns the same accepted response, sends mail only for an active account with a usable password, and is throttled. Reset links are built from configured `FRONTEND_BASE_URL`, use Django's signed single-use token mechanism, expire according to Django settings, and become invalid after the password changes. New passwords pass the configured Django validators. The application never returns a reset token in an API response.
 
-Applicant self-registration and email activation are an approved follow-up, not part of the implemented MVP API. Gmail SMTP will deliver the activation link, but Gmail is not the identity provider and Google OAuth is not implied. Verification must be separate from administrative account disablement; self-registration can create only `APPLICANT`, while officer, central, and admin accounts remain administrator-managed. The complete lifecycle, notification matrix, privacy rules, and acceptance checks are in `email-identity-notifications.md`.
+Applicant self-registration and email activation are implemented as anonymous, CSRF-protected, throttled API actions backed by signed single-use tokens and a database email outbox. Gmail SMTP delivers the activation link, but Gmail is not the identity provider and Google OAuth is not implied. Verification is separate from administrative account disablement; self-registration can create only `APPLICANT`, while officer, central, and admin accounts remain administrator-managed. The complete lifecycle, notification matrix, privacy rules, and acceptance checks are in `email-identity-notifications.md`.
 
 Cookie policy:
 

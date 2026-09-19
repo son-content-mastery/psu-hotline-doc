@@ -1,8 +1,10 @@
 from collections.abc import Mapping
 
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .models import DocumentReview
+from .models import DocumentReview, User
 
 
 class StrictSerializer(serializers.Serializer):
@@ -33,6 +35,48 @@ class StrictBooleanField(serializers.BooleanField):
 class LoginSerializer(StrictSerializer):
     email = serializers.EmailField()
     password = serializers.CharField(trim_whitespace=False, write_only=True)
+
+
+class RegistrationSerializer(StrictSerializer):
+    display_name = serializers.CharField(max_length=255, trim_whitespace=True)
+    email = serializers.EmailField()
+    password = serializers.CharField(trim_whitespace=False, write_only=True)
+    password_confirmation = serializers.CharField(trim_whitespace=False, write_only=True)
+    language = serializers.ChoiceField(choices=User.Language.choices)
+    terms_accepted = StrictBooleanField()
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if attrs["password"] != attrs["password_confirmation"]:
+            raise serializers.ValidationError({"password_confirmation": ["Passwords do not match."]})
+        if attrs["terms_accepted"] is not True:
+            raise serializers.ValidationError({"terms_accepted": ["Acceptance is required."]})
+        candidate = User(
+            email=attrs["email"].strip().lower(),
+            display_name=attrs["display_name"],
+            role=User.Role.APPLICANT,
+        )
+        try:
+            validate_password(attrs["password"], user=candidate)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages})
+        return attrs
+
+
+class ActivationResendSerializer(StrictSerializer):
+    email = serializers.EmailField()
+
+
+class ActivationConfirmSerializer(StrictSerializer):
+    token = serializers.CharField(max_length=1024)
+
+
+class RegistrationAcceptedOutputSerializer(serializers.Serializer):
+    accepted = serializers.BooleanField()
+
+
+class ActivationCompleteOutputSerializer(serializers.Serializer):
+    activated = serializers.BooleanField()
 
 
 class PasswordResetRequestSerializer(StrictSerializer):

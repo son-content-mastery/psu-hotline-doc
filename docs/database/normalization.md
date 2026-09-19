@@ -69,6 +69,10 @@ Every attachment is identified by `(application_id, document_type_id, version, a
 
 `AuditLog` uses a controlled generic `object_type/object_id` pair because it observes multiple models. This is the only purposeful generic relation; core domain behavior never depends on it, so referential business logic remains strongly related through foreign keys.
 
+### Email delivery is an outbox, not workflow state
+
+`EmailOutbox` is one delivery intent per unique event/recipient. It references the user and optional application instead of copying personal or application data, and stores only the template code, locale, retry state, and redacted error class. Message bodies and signed activation tokens are generated at delivery time and are never persisted. The application status/history remains authoritative even when email delivery is delayed or fails.
+
 ## Functional Dependency Examples
 
 | Table | Key | Non-key facts depend on |

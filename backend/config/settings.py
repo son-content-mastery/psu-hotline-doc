@@ -122,6 +122,9 @@ REST_FRAMEWORK = {
         "anon": os.getenv("ANON_THROTTLE_RATE", "120/minute"),
         "login": os.getenv("LOGIN_THROTTLE_RATE", "10/minute"),
         "password_reset": os.getenv("PASSWORD_RESET_THROTTLE_RATE", "5/hour"),
+        "registration": os.getenv("REGISTRATION_THROTTLE_RATE", "5/hour"),
+        "activation": os.getenv("ACTIVATION_THROTTLE_RATE", "5/hour"),
+        "account_email": os.getenv("ACCOUNT_EMAIL_THROTTLE_RATE", "5/hour"),
     },
 }
 
@@ -135,6 +138,13 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT_SECONDS", "10"))
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "HoTLinE Doc <noreply@example.test>")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS = int(
+    os.getenv("ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS", "86400")
+)
+EMAIL_OUTBOX_MAX_ATTEMPTS = int(os.getenv("EMAIL_OUTBOX_MAX_ATTEMPTS", "5"))
+EMAIL_OUTBOX_RETRY_BASE_SECONDS = int(os.getenv("EMAIL_OUTBOX_RETRY_BASE_SECONDS", "60"))
+EMAIL_OUTBOX_POLL_SECONDS = int(os.getenv("EMAIL_OUTBOX_POLL_SECONDS", "30"))
+WORKFLOW_NOTIFICATION_EMAIL_ENABLED = env_bool("WORKFLOW_NOTIFICATION_EMAIL_ENABLED", True)
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "HoTLinE Doc API",

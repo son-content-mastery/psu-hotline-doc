@@ -10,6 +10,7 @@ from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.contrib import admin
+from django.db import transaction
 from django.db.models import Count
 from django.test import Client, RequestFactory
 from django.utils import timezone
@@ -26,6 +27,7 @@ from apps.core.models import (
     ClassificationRule,
     DocumentType,
     DocumentReview,
+    EmailOutbox,
     FeeSchedule,
     License,
     LocalAuthority,
@@ -39,8 +41,16 @@ from apps.core.services import (
     approve_application,
     capture_requirements,
     evaluate_classification,
+    reject_application,
+    request_application_revision,
     submit_application,
     validate_uploaded_file,
+)
+from apps.core.notifications import (
+    deliver_email_outbox,
+    make_activation_token,
+    process_due_email_outbox,
+    queue_activation_email,
 )
 
 
@@ -941,6 +951,313 @@ def test_session_csrf_login_bootstrap_and_logout(seeded, settings):
         "/api/v1/auth/logout/", {}, content_type="application/json", HTTP_X_CSRFTOKEN=csrf_token
     ).status_code == 204
     assert client.get("/api/v1/auth/me/").json()["authenticated"] is False
+
+
+def test_registration_activation_and_verified_login(db, settings):
+    settings.FRONTEND_BASE_URL = "http://frontend.test"
+    mail.outbox.clear()
+    client = Client(enforce_csrf_checks=True)
+    client.get("/api/v1/auth/me/")
+    csrf_token = client.cookies["csrftoken"].value
+    payload = {
+        "display_name": "New Applicant",
+        "email": "new.applicant@example.test",
+        "password": "StrongRegistrationPass123!",
+        "password_confirmation": "StrongRegistrationPass123!",
+        "language": "en",
+        "terms_accepted": True,
+    }
+
+    response = client.post(
+        "/api/v1/auth/register/",
+        payload,
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert response.status_code == 202
+    assert response.json() == {"accepted": True}
+    user = User.objects.get(email="new.applicant@example.test")
+    assert user.role == User.Role.APPLICANT
+    assert user.local_authority_id is None
+    assert user.is_staff is False
+    assert user.is_superuser is False
+    assert user.preferred_language == User.Language.ENGLISH
+    assert user.email_verified_at is None
+    assert user.check_password(payload["password"])
+    assert AuditLog.objects.filter(actor=user, action="USER_REGISTERED").exists()
+
+    login_before_activation = client.post(
+        "/api/v1/auth/login/",
+        {"email": user.email, "password": payload["password"]},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert login_before_activation.status_code == 403
+    assert login_before_activation.json()["error"]["code"] == "EMAIL_NOT_VERIFIED"
+
+    outbox = EmailOutbox.objects.get(recipient=user, template_code=EmailOutbox.Template.ACCOUNT_ACTIVATION)
+    assert deliver_email_outbox(outbox.pk) is True
+    outbox.refresh_from_db()
+    assert outbox.status == EmailOutbox.Status.SENT
+    assert len(mail.outbox) == 1
+    assert "new.applicant@example.test" not in mail.outbox[0].body
+    match = re.search(r"token=([^\s]+)", mail.outbox[0].body)
+    assert match
+    token = match.group(1)
+
+    activated = client.post(
+        "/api/v1/auth/activation/confirm/",
+        {"token": token},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert activated.status_code == 200
+    assert activated.json() == {"activated": True}
+    user.refresh_from_db()
+    assert user.email_verified_at is not None
+    assert AuditLog.objects.filter(actor=user, action="USER_EMAIL_VERIFIED").exists()
+
+    reused = client.post(
+        "/api/v1/auth/activation/confirm/",
+        {"token": token},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert reused.status_code == 400
+    assert reused.json()["error"]["code"] == "ACTIVATION_INVALID"
+
+    logged_in = client.post(
+        "/api/v1/auth/login/",
+        {"email": user.email, "password": payload["password"]},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert logged_in.status_code == 200
+
+
+def test_registration_rejects_role_mass_assignment_and_weak_input(db):
+    client = Client(enforce_csrf_checks=True)
+    client.get("/api/v1/auth/me/")
+    csrf_token = client.cookies["csrftoken"].value
+    response = client.post(
+        "/api/v1/auth/register/",
+        {
+            "display_name": "Attempted Admin",
+            "email": "attempted.admin@example.test",
+            "password": "StrongRegistrationPass123!",
+            "password_confirmation": "StrongRegistrationPass123!",
+            "language": "th",
+            "terms_accepted": True,
+            "role": "SUPER_ADMIN",
+        },
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert response.status_code == 400
+    assert "role" in response.json()["error"]["fields"]
+    assert not User.objects.filter(email="attempted.admin@example.test").exists()
+
+
+def test_registration_and_activation_resend_do_not_enumerate_accounts(db):
+    user = User.objects.create_user(
+        email="pending@example.test",
+        password="StrongRegistrationPass123!",
+        display_name="Pending Applicant",
+    )
+    client = Client(enforce_csrf_checks=True)
+    client.get("/api/v1/auth/me/")
+    csrf_token = client.cookies["csrftoken"].value
+
+    unknown = client.post(
+        "/api/v1/auth/activation/resend/",
+        {"email": "unknown@example.test"},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    existing = client.post(
+        "/api/v1/auth/activation/resend/",
+        {"email": user.email},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert unknown.status_code == existing.status_code == 202
+    assert unknown.json() == existing.json() == {"accepted": True}
+    assert EmailOutbox.objects.filter(recipient=user).count() == 1
+
+    duplicate_payload = {
+        "display_name": "Different Name",
+        "email": user.email,
+        "password": "AnotherStrongRegistrationPass123!",
+        "password_confirmation": "AnotherStrongRegistrationPass123!",
+        "language": "en",
+        "terms_accepted": True,
+    }
+    duplicate = client.post(
+        "/api/v1/auth/register/",
+        duplicate_payload,
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert duplicate.status_code == 202
+    assert User.objects.filter(email=user.email).count() == 1
+    user.refresh_from_db()
+    assert user.display_name == "Pending Applicant"
+    assert user.check_password("StrongRegistrationPass123!")
+
+
+def test_activation_token_expires_and_email_change_invalidates_it(db, settings):
+    user = User.objects.create_user(
+        email="expiring@example.test",
+        password="StrongRegistrationPass123!",
+        display_name="Expiring Applicant",
+    )
+    token = make_activation_token(user)
+    settings.ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS = -1
+    client = Client(enforce_csrf_checks=True)
+    client.get("/api/v1/auth/me/")
+    csrf_token = client.cookies["csrftoken"].value
+    expired = client.post(
+        "/api/v1/auth/activation/confirm/",
+        {"token": token},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert expired.status_code == 400
+    assert expired.json()["error"]["code"] == "ACTIVATION_INVALID"
+
+    settings.ACCOUNT_ACTIVATION_TOKEN_MAX_AGE_SECONDS = 86400
+    token = make_activation_token(user)
+    user.email = "changed@example.test"
+    user.save(update_fields=["email"])
+    changed = client.post(
+        "/api/v1/auth/activation/confirm/",
+        {"token": token},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert changed.status_code == 400
+    assert changed.json()["error"]["code"] == "ACTIVATION_INVALID"
+
+    user.email_verified_at = timezone.now()
+    user.save(update_fields=["email_verified_at"])
+    user.email = "changed-again@example.test"
+    user.save(update_fields=["email"])
+    user.refresh_from_db()
+    assert user.email_verified_at is None
+
+
+def test_email_outbox_retries_with_redacted_error(db, settings, monkeypatch):
+    settings.EMAIL_OUTBOX_MAX_ATTEMPTS = 2
+    settings.EMAIL_OUTBOX_RETRY_BASE_SECONDS = 0
+    user = User.objects.create_user(
+        email="delivery@example.test",
+        password="StrongRegistrationPass123!",
+        display_name="Delivery Test",
+    )
+    entry = EmailOutbox.objects.create(
+        event_key="activation:test-retry:recipient:1",
+        recipient=user,
+        template_code=EmailOutbox.Template.ACCOUNT_ACTIVATION,
+        locale="en",
+    )
+
+    def fail_delivery(**kwargs):
+        raise TimeoutError("sensitive provider detail")
+
+    monkeypatch.setattr("apps.core.notifications.send_mail", fail_delivery)
+    assert deliver_email_outbox(entry.pk) is False
+    entry.refresh_from_db()
+    assert entry.status == EmailOutbox.Status.PENDING
+    assert entry.attempt_count == 1
+    assert entry.last_error_code == "TimeoutError"
+    assert process_due_email_outbox() == 0
+    entry.refresh_from_db()
+    assert entry.status == EmailOutbox.Status.FAILED
+    assert entry.attempt_count == 2
+    assert "sensitive" not in entry.last_error_code
+
+
+def test_email_outbox_is_discarded_with_rolled_back_transaction(db):
+    user = User.objects.create_user(
+        email="rollback@example.test",
+        password="StrongRegistrationPass123!",
+        display_name="Rollback Test",
+    )
+    with pytest.raises(RuntimeError):
+        with transaction.atomic():
+            queue_activation_email(user)
+            raise RuntimeError("roll back the workflow")
+    assert EmailOutbox.objects.filter(recipient=user).exists() is False
+
+
+def test_workflow_actions_queue_scoped_notifications(seeded):
+    mail.outbox.clear()
+    submitted = create_application(seeded["applicant"], seeded["patong"], name="Notification submit")
+    add_current_documents(submitted)
+    submit_application(application_id=submitted.pk, actor=seeded["applicant"])
+    submit_entries = EmailOutbox.objects.filter(application=submitted)
+    assert set(submit_entries.values_list("template_code", flat=True)) == {
+        EmailOutbox.Template.APPLICATION_SUBMITTED
+    }
+    assert set(submit_entries.values_list("recipient_id", flat=True)) == {
+        seeded["applicant"].pk,
+        seeded["officer"].pk,
+    }
+
+    revision = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        name="Notification revision",
+    )
+    add_current_documents(revision, document_status=ApplicationDocument.Status.REVISION_REQUIRED)
+    request_application_revision(application_id=revision.pk, actor=seeded["officer"], reason="Needs action")
+    revision_entries = EmailOutbox.objects.filter(application=revision)
+    assert list(revision_entries.values_list("template_code", "recipient_id")) == [
+        (EmailOutbox.Template.APPLICATION_REVISION_REQUESTED, seeded["applicant"].pk)
+    ]
+    ApplicationDocument.objects.filter(application=revision, is_current=True).update(
+        status=ApplicationDocument.Status.UPLOADED
+    )
+    submit_application(application_id=revision.pk, actor=seeded["applicant"])
+    resubmit_entries = EmailOutbox.objects.filter(
+        application=revision,
+        template_code=EmailOutbox.Template.APPLICATION_RESUBMITTED,
+    )
+    assert set(resubmit_entries.values_list("recipient_id", flat=True)) == {
+        seeded["applicant"].pk,
+        seeded["officer"].pk,
+    }
+
+    rejected = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        name="Notification rejected",
+    )
+    reject_application(application_id=rejected.pk, actor=seeded["officer"], reason="Not eligible")
+    rejected_entry = EmailOutbox.objects.get(application=rejected)
+    assert (rejected_entry.template_code, rejected_entry.recipient_id) == (
+        EmailOutbox.Template.APPLICATION_REJECTED,
+        seeded["applicant"].pk,
+    )
+    assert deliver_email_outbox(rejected_entry.pk) is True
+    assert len(mail.outbox) == 1
+    assert "Not eligible" not in mail.outbox[0].body
+    assert rejected.property.address_line not in mail.outbox[0].body
+    assert mail.outbox[0].attachments == []
+
+    approved = create_application(
+        seeded["applicant"],
+        seeded["patong"],
+        status=Application.Status.UNDER_REVIEW,
+        name="Notification approved",
+    )
+    add_current_documents(approved, document_status=ApplicationDocument.Status.APPROVED)
+    approve_application(application_id=approved.pk, actor=seeded["officer"])
+    assert list(
+        EmailOutbox.objects.filter(application=approved).values_list("template_code", "recipient_id")
+    ) == [(EmailOutbox.Template.APPLICATION_APPROVED, seeded["applicant"].pk)]
 
 
 def test_password_reset_is_generic_single_use_and_changes_password(seeded, settings):

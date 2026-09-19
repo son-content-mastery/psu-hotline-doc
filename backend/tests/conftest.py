@@ -1,8 +1,15 @@
 import pytest
+from django.core.cache import cache
 from django.core.management import call_command
 from rest_framework.test import APIClient
 
 from apps.core.models import LocalAuthority, User
+
+
+@pytest.fixture(autouse=True)
+def use_in_memory_email_backend(settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    cache.clear()
 
 
 @pytest.fixture

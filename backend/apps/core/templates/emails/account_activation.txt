@@ -1,0 +1,15 @@
+{% if locale == "th" %}สวัสดี {{ display_name }}
+
+ยืนยันอีเมลเพื่อเปิดใช้งานบัญชี HoTLinE Doc โดยเปิดลิงก์นี้ภายใน {{ expiry_hours }} ชั่วโมง:
+
+{{ activation_url }}
+
+หากคุณไม่ได้สมัครบัญชี ไม่ต้องดำเนินการใด ๆ และห้ามส่งต่อลิงก์นี้
+{% else %}Hello {{ display_name }},
+
+Verify your email to activate your HoTLinE Doc account. Open this link within {{ expiry_hours }} hours:
+
+{{ activation_url }}
+
+If you did not register, no action is required. Do not forward this link.
+{% endif %}

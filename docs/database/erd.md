@@ -10,6 +10,7 @@ This is the target logical schema for the HoTLinE Doc MVP. It keeps changing mas
 erDiagram
     LOCAL_AUTHORITY ||--o{ USER_ACCOUNT : assigns_officers
     USER_ACCOUNT ||--o{ PROPERTY : owns
+    USER_ACCOUNT ||--o{ EMAIL_OUTBOX : receives
     LOCAL_AUTHORITY ||--o{ PROPERTY : governs
     PROPERTY_TYPE o|--o{ PROPERTY : currently_classified_as
     PROPERTY_TYPE ||--o{ PROPERTY_TYPE_TRANSLATION : has
@@ -39,6 +40,7 @@ erDiagram
     PROPERTY_TYPE ||--o{ LICENSE : confirms
     FEE_SCHEDULE ||--o{ LICENSE : sourced_fee_from
     USER_ACCOUNT o|--o{ AUDIT_LOG : acts_in
+    APPLICATION o|--o{ EMAIL_OUTBOX : concerns
 
     LOCAL_AUTHORITY {
         bigint id PK
@@ -56,6 +58,8 @@ erDiagram
         string password_hash
         string role
         bigint local_authority_id FK
+        string preferred_language
+        datetime email_verified_at
         boolean is_active
         datetime created_at
     }
@@ -249,6 +253,22 @@ erDiagram
         text reason
         datetime created_at
     }
+
+    EMAIL_OUTBOX {
+        bigint id PK
+        string event_key UK
+        bigint recipient_id FK
+        bigint application_id FK
+        string template_code
+        string locale
+        string status
+        integer attempt_count
+        datetime next_attempt_at
+        datetime sent_at
+        string last_error_code
+        datetime created_at
+        datetime updated_at
+    }
 ```
 
 Nullable FKs are marked by their relationships even though Mermaid's attribute list does not express nullability. In particular, `USER_ACCOUNT.local_authority_id` is required only for local officers; classification/property-type FKs are nullable for exemption, out-of-scope, and unresolved results; and an audit actor may be null only for a clearly identified system action.
@@ -258,6 +278,12 @@ Nullable FKs are marked by their relationships even though Mermaid's attribute l
 ### User roles without a role table
 
 The MVP has four stable role codes: `APPLICANT`, `LOCAL_OFFICER`, `CENTRAL_OFFICER`, and `SUPER_ADMIN`. A constrained role field on a custom Django user is simpler than a role/permission graph. Django permissions still protect Admin operations. `local_authority_id` is required for an active local officer and must be null for roles that are not authority-scoped.
+
+Email ownership uses nullable `email_verified_at`, separate from administrative `is_active`. Public registration always creates an applicant and cannot assign a role or authority. Existing accounts are marked verified by the introducing data migration so deployment does not unexpectedly lock them out; newly registered accounts remain unverified until they consume a signed activation token.
+
+### Transactional email uses a relational outbox
+
+`EmailOutbox` stores a unique event key, recipient user, optional application, template/locale, bounded attempt state, and a redacted error class. It intentionally stores neither message bodies nor activation/reset tokens. Workflow transactions create outbox rows atomically; delivery occurs after commit and a small polling worker retries due rows with bounded exponential backoff.
 
 ### Authority is retained on the application
 
@@ -298,6 +324,7 @@ Implement these database protections where supported, with matching application 
 | Table | Constraint/index |
 | --- | --- |
 | `UserAccount` | unique normalized email; index `(role, local_authority_id)` |
+| `EmailOutbox` | unique event key; index `(status, next_attempt_at)`; protected recipient/application references |
 | `PropertyTypeTranslation` | unique `(property_type_id, language_code)` |
 | `DocumentTypeTranslation` | unique `(document_type_id, language_code)` |
 | `IssuingAgencyTranslation` | unique `(issuing_agency_id, language_code)` |
@@ -329,5 +356,6 @@ The following operations must be atomic:
 - submit and allocate a reference plus status history/audit;
 - request revision or resubmit plus history/audit; and
 - approve plus status/history/audit/license creation and fee snapshot.
+- create workflow history/audit plus its idempotent email-outbox rows; SMTP delivery happens only after commit.
 
 Uniqueness constraints make retries/concurrency safe; domain functions turn resulting conflicts into clear API errors or idempotent responses.

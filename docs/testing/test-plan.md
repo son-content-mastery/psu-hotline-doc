@@ -232,9 +232,25 @@ If frontend tests are not present, record that fact and run the production build
 **When** the applicant opens compact steps in a non-sequential order and selects two valid photographs together  
 **Then** overall and per-step completed/required/action counts equal server state; opening a step does not change completion; file selection starts one bundle upload without a repeated upload-selected CTA; both files share one bundle version with distinct attachment indexes; replacing the item retains the prior bundle; and the UI announces progress with text in addition to the progress bar.
 
-## Approved follow-up test gate: email identity and notifications
+### TC-27 — Registration and activation protect account authority
 
-Email registration, activation, and workflow notifications are not included in TC-01 through TC-26 until their implementation increment begins. When implemented, the release gate is the ten acceptance checks in `docs/security/email-identity-notifications.md`, including role-mass-assignment protection, non-enumerating responses, token expiry/single use, transaction/outbox behavior, recipient scoping, privacy, localization, accessibility, and a non-production Gmail delivery smoke test.
+**Layer:** Backend API/security plus frontend form tests.
+
+**Given** an anonymous visitor with a valid unique email
+
+**When** they register, attempt role mass assignment, sign in before activation, consume the emailed token, and reuse it
+
+**Then** only an unverified `APPLICANT` can be created; protected fields are rejected; pre-verification login is denied; activation succeeds once; expiry, reuse, malformed token, or changed email fails; registration/resend do not enumerate accounts; and the accessible Thai/English UI retains valid input and explains the next action.
+
+### TC-28 — Transactional notifications are scoped, idempotent, and retryable
+
+**Layer:** Backend transaction/service tests plus delivery smoke test.
+
+**Given** verified applicant/officer accounts and application workflow actions
+
+**When** submit, revision request, resubmit, approval, or rejection commits
+
+**Then** unique outbox rows target only the applicant and documented responsible-authority officers; rollback queues nothing; email contains no attachments, free-text reasons, or personal records; SMTP failure does not roll back workflow; retries use bounded backoff and a redacted error class; and a real non-production Gmail smoke test accepts one message without exposing credentials.
 
 ## Primary end-to-end demo acceptance
 
