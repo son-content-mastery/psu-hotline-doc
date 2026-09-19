@@ -27,6 +27,7 @@ from apps.core.models import (
     ClassificationRule,
     DocumentType,
     DocumentReview,
+    DocumentPreflight,
     EmailOutbox,
     FeeSchedule,
     License,
@@ -41,6 +42,7 @@ from apps.core.models import (
     User,
 )
 from apps.core.services import (
+    analyze_document_quality,
     approve_application,
     capture_requirements,
     evaluate_classification,
@@ -72,6 +74,18 @@ def make_png(name="image.png", content_type="image/png"):
     stream = io.BytesIO()
     Image.new("RGB", (4, 4), "white").save(stream, "PNG")
     return SimpleUploadedFile(name, stream.getvalue(), content_type=content_type)
+
+
+def make_checker_png(name="clear-image.png"):
+    stream = io.BytesIO()
+    image = Image.new("L", (1200, 1200), "white")
+    pixels = image.load()
+    for y in range(1200):
+        for x in range(1200):
+            if (x // 60 + y // 60) % 2 == 0:
+                pixels[x, y] = 0
+    image.save(stream, "PNG")
+    return SimpleUploadedFile(name, stream.getvalue(), content_type="image/png")
 
 
 def create_application(owner, authority, *, status=Application.Status.DRAFT, type_code="TYPE_1", name="Test property"):
@@ -546,6 +560,44 @@ def test_upload_validation_rejects_decompression_bomb(monkeypatch):
     assert exc_info.value.code == "UNSUPPORTED_FILE_TYPE"
 
 
+def test_document_quality_preflight_is_advisory_and_persisted(seeded, api_client, settings):
+    settings.DOCUMENT_QUALITY_PREFLIGHT_ENABLED = True
+    application = create_application(seeded["applicant"], seeded["patong"], name="Quality preflight")
+    image_requirement = application.requirements.get(document_type__code="PARKING_PHOTOS")
+    pdf_requirement = application.requirements.exclude(document_type=image_requirement.document_type).first()
+    api_client.force_authenticate(seeded["applicant"])
+
+    image_response = api_client.post(
+        f"/api/v1/applications/{application.id}/documents/",
+        {"document_type_id": image_requirement.document_type_id, "file": make_png("tiny-white.png")},
+        format="multipart",
+    )
+    assert image_response.status_code == 201
+    assert image_response.data["status"] == ApplicationDocument.Status.UPLOADED
+    assert image_response.data["preflight"]["status"] == DocumentPreflight.Status.WARNING
+    assert {"LOW_RESOLUTION", "TOO_BRIGHT", "LOW_CONTRAST"} <= set(
+        image_response.data["preflight"]["issue_codes"]
+    )
+    persisted = DocumentPreflight.objects.get(application_document_id=image_response.data["id"])
+    assert persisted.analyzer_version == "quality-v1"
+    assert not hasattr(persisted, "raw_text")
+
+    pdf_response = api_client.post(
+        f"/api/v1/applications/{application.id}/documents/",
+        {"document_type_id": pdf_requirement.document_type_id, "file": make_pdf("structured.pdf")},
+        format="multipart",
+    )
+    assert pdf_response.status_code == 201
+    assert pdf_response.data["preflight"]["status"] == DocumentPreflight.Status.LIMITED
+    assert pdf_response.data["preflight"]["issue_codes"] == ["PDF_VISUAL_CHECK_UNAVAILABLE"]
+
+    clear_upload = make_checker_png()
+    _, _, mime, clear_data = validate_uploaded_file(clear_upload)
+    clear_result = analyze_document_quality(clear_data, mime)
+    assert clear_result["status"] == DocumentPreflight.Status.PASS
+    assert clear_result["issue_codes"] == []
+
+
 def test_upload_bundle_rejects_more_than_ten_files(seeded, api_client):
     application = create_application(seeded["applicant"], seeded["patong"], name="Oversized bundle")
     requirement = application.requirements.get(document_type__code="PARKING_PHOTOS")
@@ -962,7 +1014,7 @@ def test_openapi_describes_enriched_officer_and_requirement_payloads(seeded):
         officer_properties
     )
     document_properties = schemas["OfficerDocumentOutput"]["properties"]
-    assert {"uploaded_at", "uploaded_by", "category", "version_label", "versions"} <= set(document_properties)
+    assert {"uploaded_at", "uploaded_by", "category", "version_label", "versions", "preflight"} <= set(document_properties)
     requirement_properties = schemas["RequirementItemOutput"]["properties"]
     assert {"description", "instructions", "guidance"} <= set(requirement_properties)
     applicant_properties = schemas["ApplicantApplicationListItemOutput"]["properties"]

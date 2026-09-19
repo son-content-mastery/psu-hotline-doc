@@ -106,6 +106,7 @@ Expected settings:
 | `EMAIL_OUTBOX_RETRY_BASE_SECONDS` | Base for bounded exponential retry delay | `60`. |
 | `EMAIL_OUTBOX_POLL_SECONDS` | Worker polling interval | `30`. |
 | `WORKFLOW_NOTIFICATION_EMAIL_ENABLED` | Queue documented workflow messages | `true`; does not disable security-critical activation/reset mail. |
+| `DOCUMENT_QUALITY_PREFLIGHT_ENABLED` | Run advisory image/PDF quality preflight on new uploads | `true`; disabling it leaves `preflight` null for later uploads and does not alter existing results. |
 | `LICENSE_RENEWAL_REMINDERS_ENABLED` | Scan and queue hotel-licence expiry reminders | `true`; disable only when another reviewed scheduler owns this job. |
 | `LICENSE_RENEWAL_REMINDER_DAYS` | Comma-separated positive day thresholds | `90,30,7`; changing values changes future event keys, so review before deployment. |
 | `LICENSE_RENEWAL_SCAN_SECONDS` | Interval between renewal scans in the email worker | `3600`; accepted range is 60–86400 seconds. |

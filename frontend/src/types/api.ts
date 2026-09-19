@@ -262,6 +262,22 @@ export interface ApplicationDocument {
   download_url?: string
   bundle_count?: number
   bundle_documents?: ApplicationDocument[]
+  preflight?: DocumentPreflight | null
+}
+
+export interface DocumentPreflight {
+  status: 'PASS' | 'WARNING' | 'LIMITED'
+  issue_codes: Array<
+    | 'LOW_RESOLUTION'
+    | 'TOO_DARK'
+    | 'TOO_BRIGHT'
+    | 'LOW_CONTRAST'
+    | 'POSSIBLY_BLURRY'
+    | 'PDF_VISUAL_CHECK_UNAVAILABLE'
+    | 'QUALITY_CHECK_UNAVAILABLE'
+  >
+  analyzer_version: string
+  analyzed_at: string
 }
 
 export interface HistoryEvent {

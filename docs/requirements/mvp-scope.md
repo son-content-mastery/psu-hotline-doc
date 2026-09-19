@@ -201,6 +201,10 @@ The model/API/UI, redacted outbox/retry delivery handling, localized templates, 
 
 The email worker scans approved hotel licences and queues idempotent reminders at configurable pre-expiry thresholds. The applicant dashboard includes due and expired licences in its action view and links to the protected printable licence. This extension does not implement an online renewal application, alter an issued expiry date, or treat a non-hotel notification acknowledgement as a licence.
 
+## Implemented Extension: Document Quality Preflight (S1A)
+
+Every new image upload receives a small advisory check for resolution, exposure, contrast, and possible blur; the result is visible to both the applicant and the authorized local officer. Valid PDFs state that their structure passed upload validation while visual quality remains unchecked. The result is tied to the exact file version, stores no extracted content, and never blocks submission or replaces officer review. Full OCR/document-type recognition remains outside this batch and is S1B.
+
 ## Scope-change Rule
 
 A feature enters the MVP only if it is required to complete or protect the happy path, a Must Have acceptance check, or a documented security/accessibility constraint. Otherwise record it as a follow-up rather than expanding the implementation during the Hackathon.

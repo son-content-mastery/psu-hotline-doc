@@ -265,6 +265,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** one email is queued per applicable licence/threshold, a repeated scan creates no duplicate, the message exposes no address/documents, the acknowledgement is skipped, and due or expired hotel licences appear in the owner-scoped action view with a link to protected licence details.
 
+### TC-30 — Document quality preflight is transparent and non-blocking
+
+**Layer:** Backend upload/service tests plus applicant/officer component tests.
+
+**Given** valid low-quality image, clear image, and structurally valid PDF uploads
+
+**When** the server creates each immutable document version
+
+**Then** the low-quality image receives stable warning codes, the clear image passes, and the PDF reports limited visual coverage; the result is shown to the owning applicant and scoped officer, contains no extracted content, leaves status `UPLOADED`, and never changes readiness or the human review decision.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:

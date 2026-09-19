@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import InlineAlert from '@/components/InlineAlert.vue'
+import DocumentPreflight from '@/components/DocumentPreflight.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { api, ApiError } from '@/services/api'
 import type {
@@ -336,6 +337,8 @@ onMounted(load)
               {{ t('officer.download', { name: documentItem.document_type.name, version: documentItem.version }) }}
               <span class="sr-only">({{ t('common.newWindow') }})</span>
             </a>
+
+            <DocumentPreflight v-if="documentItem.preflight" :preflight="documentItem.preflight" />
 
             <details
               v-if="documentItem.reviews?.length || documentItem.versions?.length"

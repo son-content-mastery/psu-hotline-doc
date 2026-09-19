@@ -237,6 +237,24 @@
     "version": "Version {version}",
     "uploadedAt": "Uploaded {date}",
     "viewFile": "Open {name} version {version}",
+    "preflight": {
+      "label": "Automated document quality preflight",
+      "status": {
+        "pass": "Automated quality check: no warning detected",
+        "warning": "Check this file before submitting",
+        "limited": "Automated quality check is limited for this file"
+      },
+      "issues": {
+        "low_resolution": "The image resolution may be too low for comfortable review.",
+        "too_dark": "The image appears too dark.",
+        "too_bright": "The image appears overexposed or almost blank.",
+        "low_contrast": "The image has low contrast and text may be hard to read.",
+        "possibly_blurry": "The image may be blurred or out of focus.",
+        "pdf_visual_check_unavailable": "The PDF structure is valid, but visual clarity was not assessed in this step.",
+        "quality_check_unavailable": "The quality check could not assess this file; review it manually."
+      },
+      "advisory": "This is an early warning only. It does not confirm document type, authenticity, or officer approval."
+    },
     "history": "File history",
     "reviewBeforeSubmit": "Review before submission",
     "uploadMissing": "Upload missing documents",

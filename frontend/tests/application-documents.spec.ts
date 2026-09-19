@@ -96,7 +96,21 @@ describe('step-based applicant document flow', () => {
             next: null,
             previous: null,
             results: [
-              { id: 51, document_type: parking.document_type, version: 1, attachment_index: 1, status: 'UPLOADED', is_current: true, original_filename: 'parking-1.png' },
+              {
+                id: 51,
+                document_type: parking.document_type,
+                version: 1,
+                attachment_index: 1,
+                status: 'UPLOADED',
+                is_current: true,
+                original_filename: 'parking-1.png',
+                preflight: {
+                  status: 'WARNING',
+                  issue_codes: ['POSSIBLY_BLURRY'],
+                  analyzer_version: 'quality-v1',
+                  analyzed_at: '2026-09-19T05:00:00Z',
+                },
+              },
               { id: 52, document_type: parking.document_type, version: 1, attachment_index: 2, status: 'UPLOADED', is_current: true, original_filename: 'parking-2.png' },
             ],
           }))
@@ -138,6 +152,8 @@ describe('step-based applicant document flow', () => {
     expect(wrapper.text()).toContain('Parking photographs')
     expect(wrapper.get('input[type="file"]').attributes('multiple')).toBeDefined()
     expect(wrapper.text()).toContain('Current evidence bundle: 2 file(s)')
+    expect(wrapper.text()).toContain('Check this file before submitting')
+    expect(wrapper.text()).toContain('may be blurred or out of focus')
     wrapper.unmount()
   })
 })

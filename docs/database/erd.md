@@ -33,6 +33,7 @@ erDiagram
     DOCUMENT_TYPE ||--o{ APPLICATION_DOCUMENT : classifies
     USER_ACCOUNT ||--o{ APPLICATION_DOCUMENT : uploads
     APPLICATION_DOCUMENT ||--o{ DOCUMENT_REVIEW : receives
+    APPLICATION_DOCUMENT ||--o| DOCUMENT_PREFLIGHT : receives
     USER_ACCOUNT ||--o{ DOCUMENT_REVIEW : performs
 
     PROPERTY_TYPE ||--o{ FEE_SCHEDULE : prices
@@ -191,6 +192,15 @@ erDiagram
         boolean is_current
     }
 
+    DOCUMENT_PREFLIGHT {
+        bigint id PK
+        bigint application_document_id FK,UK
+        string status
+        json issue_codes
+        string analyzer_version
+        datetime analyzed_at
+    }
+
     DOCUMENT_REVIEW {
         bigint id PK
         bigint application_document_id FK
@@ -333,6 +343,7 @@ Implement these database protections where supported, with matching application 
 | `ApplicationRequirement` | unique `(application_id, document_type_id)` |
 | `Application` | unique nullable reference number; indexes `(property_id, status)` and `(responsible_authority_id, status)` |
 | `ApplicationDocument` | unique `(application_id, document_type_id, version, attachment_index)`; conditional unique current row per `(application_id, document_type_id, attachment_index)`; positive version/attachment index/file size |
+| `DocumentPreflight` | unique application document; controlled result status and version-bound analyzer metadata |
 | `FeeSchedule` | amount ≥ 0, validity years > 0, end ≥ start; prevent overlapping active periods for a property type/currency in validation/constraint |
 | `License` | unique application; unique artifact number; hotel licence requires fee/validity/expiry while notification acknowledgement requires those fields to be null |
 | Histories/audit | indexes by parent/object and descending `created_at`; no product update/delete endpoint |

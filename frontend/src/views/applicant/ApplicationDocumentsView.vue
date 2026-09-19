@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import InlineAlert from '@/components/InlineAlert.vue'
+import DocumentPreflight from '@/components/DocumentPreflight.vue'
 import RequirementList from '@/components/RequirementList.vue'
 import { api, ApiError } from '@/services/api'
 import type {
@@ -382,6 +383,7 @@ onMounted(loadData)
                       {{ t('documents.viewFile', { name: item.document_type.name, version: documentItem.version }) }}
                       <span class="sr-only">({{ t('common.newWindow') }})</span>
                     </a>
+                    <DocumentPreflight v-if="documentItem.preflight" :preflight="documentItem.preflight" />
                   </li>
                 </ul>
               </div>

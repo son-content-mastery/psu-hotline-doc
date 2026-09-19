@@ -76,6 +76,7 @@ Every required document is reviewed individually. Each item shows:
 - current version number and current-file marker;
 - filename, upload date/time, and uploader role;
 - current localized document status;
+- the same version-bound advisory quality-preflight result shown to the applicant, clearly separated from the officer's decision;
 - prior versions/history in a collapsed section;
 - secure view/download action;
 - any earlier officer reason;

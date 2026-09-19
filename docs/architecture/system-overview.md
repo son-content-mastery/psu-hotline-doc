@@ -106,6 +106,7 @@ The backend owns:
 - master-data localization/fallback;
 - checklist derivation and submission readiness;
 - upload validation and document versioning;
+- synchronous advisory image-quality preflight attached to each uploaded version;
 - the centrally defined application state machine;
 - document review and correction rules;
 - backend-generated references, fees, and licenses;
@@ -123,7 +124,7 @@ PostgreSQL stores:
 - users, roles, and authority assignments;
 - properties, applications, classifications, and current statuses;
 - normalized master data and translation rows;
-- requirements, document metadata, version and review history;
+- requirements, document metadata, version-bound quality preflight, and review history;
 - fee schedules and issued-license snapshots;
 - application status history and audit entries; and
 - email verification time and idempotent email delivery attempts; and

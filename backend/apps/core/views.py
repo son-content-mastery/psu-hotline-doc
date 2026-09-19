@@ -32,6 +32,7 @@ from .models import (
     ApplicationRequirement,
     ClassificationRule,
     DocumentReview,
+    DocumentPreflight,
     DocumentType,
     FeeSchedule,
     IssuingAgency,
@@ -309,6 +310,7 @@ def document_data(document, locale, *, officer=False, include_reviews=False):
         "uploader_role": document.uploaded_by.role,
         "latest_review_reason": latest_review.reason if latest_review else None,
         "download_url": f"{prefix}/{document.id}/file/",
+        "preflight": preflight_data(document),
     }
     if include_reviews:
         result["reviews"] = [
@@ -322,6 +324,19 @@ def document_data(document, locale, *, officer=False, include_reviews=False):
             for review in document.reviews.select_related("reviewer").all()
         ]
     return result
+
+
+def preflight_data(document):
+    try:
+        preflight = document.preflight
+    except DocumentPreflight.DoesNotExist:
+        return None
+    return {
+        "status": preflight.status,
+        "issue_codes": preflight.issue_codes,
+        "analyzer_version": preflight.analyzer_version,
+        "analyzed_at": preflight.analyzed_at,
+    }
 
 
 def guidance_data(document_type, authority, locale):
@@ -1097,7 +1112,7 @@ class ApplicationDocumentsView(ContractAPIView):
             raise DomainError(
                 "VALIDATION_ERROR", "include_versions must be true or false.", http_status=status.HTTP_400_BAD_REQUEST
             )
-        queryset = application.documents.select_related("document_type", "uploaded_by").prefetch_related(
+        queryset = application.documents.select_related("document_type", "uploaded_by", "preflight").prefetch_related(
             "document_type__translations", "reviews"
         )
         if include_raw != "true":
@@ -1118,7 +1133,7 @@ class ApplicationDocumentsView(ContractAPIView):
             uploads=uploads,
             actor=request.user,
         )
-        refreshed = ApplicationDocument.objects.select_related("document_type", "uploaded_by").prefetch_related(
+        refreshed = ApplicationDocument.objects.select_related("document_type", "uploaded_by", "preflight").prefetch_related(
             "document_type__translations", "reviews"
         ).filter(pk__in=[document.pk for document in documents]).order_by("attachment_index")
         payloads = [document_data(document, requested_locale(request)) for document in refreshed]
@@ -1231,7 +1246,7 @@ class OfficerApplicationDetailView(ContractAPIView):
         locale = requested_locale(request)
         administrative_subdistrict = application.property.administrative_subdistrict
         required_type_ids = set(application.requirements.filter(is_required=True).values_list("document_type_id", flat=True))
-        documents = list(application.documents.select_related("document_type", "uploaded_by").prefetch_related(
+        documents = list(application.documents.select_related("document_type", "uploaded_by", "preflight").prefetch_related(
             "document_type__translations", "reviews__reviewer"
         ))
         state = requirement_state(application)

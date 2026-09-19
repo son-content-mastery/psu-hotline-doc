@@ -184,6 +184,10 @@ Document review targets a specific version. An officer cannot review a supersede
 
 Antivirus/content-disarm scanning is not implemented for the Hackathon unless a concrete scanner is added and verified. The validation and storage boundary must leave one backend hook for future scanning before a file becomes downloadable. Production launch requires a threat review and a decision on malware scanning, retention, quarantine, and deletion.
 
+### Advisory quality preflight (S1A)
+
+After authoritative type/safety validation, the upload service performs a bounded synchronous quality check with the already-decoded bytes. Images are checked for low resolution, extreme exposure, low contrast, and a conservative possible-blur signal. Valid PDFs receive an explicit limited result because this batch does not render pages or run OCR. Results are version-bound advisory metadata: they never make a file authentic, approve it, or block submission. No pixels, thumbnails, extracted text, identity values, or analyzer metrics are copied into PostgreSQL or logs. Disabling `DOCUMENT_QUALITY_PREFLIGHT_ENABLED` stores no result for later uploads.
+
 ## Data, logs, and secrets
 
 - Configuration and secrets come from environment variables; `.env` is ignored and `.env.example` contains placeholders only.

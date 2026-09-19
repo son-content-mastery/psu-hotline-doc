@@ -122,8 +122,11 @@ Requirements:
 - during upload, show textual progress and prevent duplicate activation;
 - on failure, show a localized error and let the user choose the file again;
 - on success, announce the new localized status and refresh completion data.
+- after success, show the server-owned quality-preflight result next to that file. Warnings name the specific concern in text; a pass remains modestly labelled, and PDFs disclose that visual checking is not yet available. Always state that this does not confirm document type, authenticity, or approval.
 
 Never overwrite an earlier upload. Files selected together create one bundle version with one-based attachment positions. Replacing an item replaces the entire current bundle atomically and retains every attachment from earlier bundle versions. After success, show the new version number, filenames, uploaded time, and current state in user language. Earlier versions may be shown in a collapsed **ประวัติไฟล์** / **File history** list, clearly marked “previous,” and are never offered as the current file by mistake.
+
+Quality warnings are advisory and do not add another CTA, reduce completion counts, or disable **Review before submission**. The authorized officer sees the same version-bound result as context, but still opens the protected file and records the human decision.
 
 Do not rely on the browser `accept` attribute for security. Never preview executable or unvalidated content inline.
 

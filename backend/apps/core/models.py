@@ -548,6 +548,23 @@ class ApplicationDocument(models.Model):
         ]
 
 
+class DocumentPreflight(models.Model):
+    class Status(models.TextChoices):
+        PASS = "PASS", "No quality warning detected"
+        WARNING = "WARNING", "Quality warning detected"
+        LIMITED = "LIMITED", "Automated quality check is limited"
+
+    application_document = models.OneToOneField(
+        ApplicationDocument,
+        on_delete=models.PROTECT,
+        related_name="preflight",
+    )
+    status = models.CharField(max_length=20, choices=Status.choices)
+    issue_codes = models.JSONField(default=list)
+    analyzer_version = models.CharField(max_length=30)
+    analyzed_at = models.DateTimeField(auto_now_add=True)
+
+
 class DocumentReview(ImmutableEventMixin):
     class Outcome(models.TextChoices):
         APPROVED = "APPROVED", "Approved"

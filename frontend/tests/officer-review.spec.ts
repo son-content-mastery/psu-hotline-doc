@@ -57,6 +57,12 @@ describe('officer application review', () => {
               uploaded_at: '2026-09-18T04:00:00Z',
               uploaded_by: { id: 1, display_name: 'Demo applicant', role: 'APPLICANT' },
               uploader_role: 'APPLICANT',
+              preflight: {
+                status: 'WARNING',
+                issue_codes: ['LOW_RESOLUTION'],
+                analyzer_version: 'quality-v1',
+                analyzed_at: '2026-09-18T04:00:01Z',
+              },
               reviews: [],
               versions: [
                 {
@@ -89,6 +95,7 @@ describe('officer application review', () => {
     expect(text).toContain('Demo applicant · Applicant')
     expect(text).toContain('Application decision history')
     expect(text).toContain('Reason: Review started')
+    expect(text).toContain('The image resolution may be too low')
     expect(wrapper.findAll('button').some((button) => button.text().includes('Return application for correction'))).toBe(true)
     expect(wrapper.findAll('button').some((button) => button.text().includes('Reject application'))).toBe(true)
     expect(text).not.toContain('Approve and issue licence')

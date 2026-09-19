@@ -13,6 +13,7 @@ This repository contains a two-day Hackathon MVP intended for local demonstratio
 - Phuket province, district, subdistrict, and postal-code selection from a pinned open-source snapshot with server-side import validation; responsible authority remains a separate routing choice.
 - Database-driven 28-item hotel and 17-item non-hotel document checklists, grouped into resumable preparation steps with exact progress.
 - Direct upload for PDF/JPG/PNG files, multi-file evidence bundles, immutable replacement versions, and backend file validation.
+- Advisory image-quality preflight for resolution, exposure, contrast, and possible blur; PDF structure is accepted with an explicit visual-check limitation.
 - Applicant review, submission, correction, resubmission, status history, and print-friendly licence or notification acknowledgement.
 - Authority-scoped officer queue and document review. Approval needs no reason; correction and rejection require a reason visible to the applicant.
 - Read-only central overview with all 19 configured Phuket authorities, five-row expandable ranking, accessible heat grid, and aggregate detail dialogs.

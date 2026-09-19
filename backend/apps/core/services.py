@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path, PurePath
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageFilter, ImageStat, UnidentifiedImageError
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -25,6 +25,7 @@ from .models import (
     AuditLog,
     ClassificationRule,
     DocumentReview,
+    DocumentPreflight,
     FeeSchedule,
     EmailOutbox,
     License,
@@ -40,6 +41,12 @@ ALLOWED_UPLOADS = {
     ".png": ("image/png", "png"),
 }
 MAX_IMAGE_PIXELS = 40_000_000
+QUALITY_ANALYZER_VERSION = "quality-v1"
+QUALITY_MIN_SHORT_EDGE_PX = 800
+QUALITY_MIN_CONTRAST_STDDEV = 12
+QUALITY_DARK_MEAN = 40
+QUALITY_BRIGHT_MEAN = 245
+QUALITY_MIN_EDGE_VARIANCE = 60
 
 
 @dataclass(frozen=True)
@@ -401,6 +408,53 @@ def validate_uploaded_file(upload):
     return name, extension, expected_mime, data
 
 
+def analyze_document_quality(data, content_type):
+    """Return advisory, non-blocking quality signals without retaining document content."""
+    if not settings.DOCUMENT_QUALITY_PREFLIGHT_ENABLED:
+        return None
+    if content_type == "application/pdf":
+        return {
+            "status": DocumentPreflight.Status.LIMITED,
+            "issue_codes": ["PDF_VISUAL_CHECK_UNAVAILABLE"],
+            "analyzer_version": QUALITY_ANALYZER_VERSION,
+        }
+    try:
+        with Image.open(io.BytesIO(data)) as source:
+            source.load()
+            width, height = source.size
+            grayscale = source.convert("L")
+            grayscale.thumbnail((1600, 1600))
+            statistics = ImageStat.Stat(grayscale)
+            brightness = statistics.mean[0]
+            contrast = statistics.stddev[0]
+            edges = grayscale.filter(ImageFilter.FIND_EDGES)
+            if edges.width > 4 and edges.height > 4:
+                edges = edges.crop((2, 2, edges.width - 2, edges.height - 2))
+            edge_variance = ImageStat.Stat(edges).var[0]
+        issue_codes = []
+        if min(width, height) < QUALITY_MIN_SHORT_EDGE_PX:
+            issue_codes.append("LOW_RESOLUTION")
+        if brightness < QUALITY_DARK_MEAN:
+            issue_codes.append("TOO_DARK")
+        elif brightness > QUALITY_BRIGHT_MEAN:
+            issue_codes.append("TOO_BRIGHT")
+        if contrast < QUALITY_MIN_CONTRAST_STDDEV:
+            issue_codes.append("LOW_CONTRAST")
+        if edge_variance < QUALITY_MIN_EDGE_VARIANCE:
+            issue_codes.append("POSSIBLY_BLURRY")
+        return {
+            "status": DocumentPreflight.Status.WARNING if issue_codes else DocumentPreflight.Status.PASS,
+            "issue_codes": issue_codes,
+            "analyzer_version": QUALITY_ANALYZER_VERSION,
+        }
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError, EOFError):
+        return {
+            "status": DocumentPreflight.Status.LIMITED,
+            "issue_codes": ["QUALITY_CHECK_UNAVAILABLE"],
+            "analyzer_version": QUALITY_ANALYZER_VERSION,
+        }
+
+
 @transaction.atomic
 def upload_document(*, application_id, document_type_id, actor, upload=None, uploads=None):
     application = (
@@ -455,6 +509,7 @@ def upload_document(*, application_id, document_type_id, actor, upload=None, upl
             "DOCUMENT_NOT_OPEN_FOR_REVISION", "This document was not requested for replacement."
         )
     validated_uploads = [validate_uploaded_file(item) for item in upload_list]
+    preflight_results = [analyze_document_quality(data, mime) for _, _, mime, data in validated_uploads]
     max_version = (
         ApplicationDocument.objects.filter(application=application, document_type_id=document_type_id)
         .aggregate(value=Max("version"))["value"]
@@ -468,8 +523,8 @@ def upload_document(*, application_id, document_type_id, actor, upload=None, upl
         if current:
             ApplicationDocument.objects.filter(pk__in=[document.pk for document in current]).update(is_current=False)
         documents = []
-        for attachment_index, ((name, _, mime, data), saved_key) in enumerate(
-            zip(validated_uploads, saved_keys), start=1
+        for attachment_index, ((name, _, mime, data), saved_key, preflight_result) in enumerate(
+            zip(validated_uploads, saved_keys, preflight_results), start=1
         ):
             document = ApplicationDocument.objects.create(
                 application=application,
@@ -484,6 +539,11 @@ def upload_document(*, application_id, document_type_id, actor, upload=None, upl
                 uploaded_by=actor,
                 is_current=True,
             )
+            if preflight_result is not None:
+                DocumentPreflight.objects.create(
+                    application_document=document,
+                    **preflight_result,
+                )
             audit_event(actor=actor, action="DOCUMENT_UPLOADED", obj=document)
             documents.append(document)
         refresh_submission_readiness(application, actor=actor)

@@ -119,6 +119,8 @@ Sample demo document types may include แบบคำขอ, หลักฐา
 - Earlier bundles, files, and their reviews are retained; replacement never overwrites them.
 - New uploads begin at `UPLOADED`. A replacement for a requested revision does not inherit `APPROVED` from an older version.
 - Applicants can upload only to owned, editable applications. Officers do not upload on an applicant's behalf in the MVP.
+- Each newly uploaded file may receive one version-bound advisory `DocumentPreflight`. Quality warnings do not change the document status, completeness, submission readiness, or officer decision authority.
+- The quality analyzer persists only stable issue codes, analyzer version, result status, and server time. It does not persist raw OCR text, images, thumbnails, extracted identity data, or opaque confidence scores.
 
 Document display states:
 

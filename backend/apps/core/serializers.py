@@ -242,6 +242,13 @@ class UploaderOutputSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=["APPLICANT", "LOCAL_OFFICER", "CENTRAL_OFFICER", "SUPER_ADMIN"])
 
 
+class DocumentPreflightOutputSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["PASS", "WARNING", "LIMITED"])
+    issue_codes = serializers.ListField(child=serializers.CharField())
+    analyzer_version = serializers.CharField()
+    analyzed_at = serializers.DateTimeField()
+
+
 class OfficerDocumentVersionOutputSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     application_id = serializers.IntegerField()
@@ -260,6 +267,7 @@ class OfficerDocumentVersionOutputSerializer(serializers.Serializer):
     uploader_role = serializers.CharField()
     latest_review_reason = serializers.CharField(allow_null=True)
     download_url = serializers.CharField()
+    preflight = DocumentPreflightOutputSerializer(allow_null=True)
     reviews = DocumentReviewOutputSerializer(many=True)
     is_in_submitted_checklist = serializers.BooleanField()
     reviewable = serializers.BooleanField()
