@@ -46,6 +46,7 @@ from .models import (
     IssuingAgency,
     License,
     LocalAuthority,
+    MaintenanceNotice,
     Property,
     PropertyType,
     PropertyTypeDocumentRequirement,
@@ -115,6 +116,33 @@ class ContractAPIView(GenericAPIView):
     """Schema-friendly base for the small, explicitly implemented API views."""
 
     serializer_class = EmptySerializer
+
+
+class SystemStatusView(ContractAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        now = timezone.now()
+        notice = (
+            MaintenanceNotice.objects.filter(is_active=True, starts_at__lte=now, ends_at__gt=now)
+            .order_by("-starts_at")
+            .first()
+        )
+        if notice is None:
+            return Response({"maintenance": None, "checked_at": now})
+        locale = requested_locale(request)
+        return Response(
+            {
+                "maintenance": {
+                    "title": notice.title_en if locale == "en" else notice.title_th,
+                    "message": notice.message_en if locale == "en" else notice.message_th,
+                    "starts_at": notice.starts_at,
+                    "ends_at": notice.ends_at,
+                },
+                "checked_at": now,
+            }
+        )
 
 
 def authority_data(authority):

@@ -81,6 +81,12 @@ const router = createRouter({
       meta: { titleKey: 'routes.verifyLicense' },
     },
     {
+      path: '/system-status',
+      name: 'system-status',
+      component: () => import('@/views/public/SystemStatusView.vue'),
+      meta: { titleKey: 'routes.systemStatus' },
+    },
+    {
       path: '/applications',
       name: 'application-list',
       component: () => import('@/views/applicant/ApplicationListView.vue'),

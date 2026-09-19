@@ -753,6 +753,15 @@
     "publicVerificationNote": "The QR code exposes only the details needed for verification, not the applicant or full address.",
     "qrAlt": "QR code for licence verification"
   },
+  "maintenance": {
+    "title": "System status and maintenance",
+    "until": "Scheduled until {date}",
+    "details": "View details",
+    "starts": "Starts",
+    "ends": "Expected end",
+    "none": "There is no active maintenance notice.",
+    "error": "System status could not be loaded."
+  },
   "verification": {
     "eyebrow": "Public service",
     "title": "Verify a licence",
@@ -818,6 +827,7 @@
     "officerCases": "Case library",
     "officerReview": "Officer application review",
     "central": "Province overview",
+    "systemStatus": "System status",
     "license": "Printable licence",
     "verifyLicense": "Verify licence",
     "forbidden": "Access unavailable",

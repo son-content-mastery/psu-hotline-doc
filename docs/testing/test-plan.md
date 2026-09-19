@@ -335,6 +335,16 @@ If frontend tests are not present, record that fact and run the production build
 
 **Then** only one open request is allowed; the other officer receives scoped `404`; the central projection contains no person/property/address/contact/file/application/officer/authority identifier or free text; the resolution uses an allowlisted code; audit events are written; and the linked application status is unchanged.
 
+### TC-37 — Backup verification and maintenance notice
+
+**Layer:** Backend command/unit/API tests plus public status component test.
+
+**Given** PostgreSQL settings, a private backup directory, and an active bilingual maintenance notice
+
+**When** the backup command runs and a public client requests system status
+
+**Then** the dump is custom-format, verified, checksummed, mode `0600`, retained by configured count, and does not place the database password in arguments; the API/UI return only the active localized notice and time window.
+
 ## Primary end-to-end demo acceptance
 
 Run this in a fresh seeded environment after automated tests:

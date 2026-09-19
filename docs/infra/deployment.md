@@ -4,6 +4,14 @@ This is the source of truth for running the Hackathon MVP. The supported databas
 
 This document describes a development/demo deployment, not a production certification. Do not expose Django's development server, Vite's development server, seeded demo credentials, or locally served media directly to the internet.
 
+## Local scheduled backups
+
+`docker compose up` starts `backup-worker`, which writes PostgreSQL custom-format archives and SHA-256 manifests to the named `backup_data` volume. Configure `BACKUP_INTERVAL_SECONDS` (300–604800), `BACKUP_RETENTION_COUNT` (1–90), and `BACKUP_DIR`. Each archive is verified before it is reported successful. Use `create_database_backup` and `verify_database_backup` for manual checks.
+
+Restoration is intentionally not automatic. For recovery rehearsal, copy a verified archive out of the volume and restore it with `pg_restore` into a new empty PostgreSQL database, then run application smoke tests before any cutover. Never restore over the active demo database.
+
+Super Admin schedules bilingual maintenance windows in Django Admin. The public `/api/v1/system/status/` endpoint exposes only active notice content and timing; it does not place the application in maintenance mode by itself.
+
 ## Runtime shape
 
 ```text

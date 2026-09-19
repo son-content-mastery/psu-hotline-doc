@@ -52,6 +52,14 @@ Unexpected server errors use `INTERNAL_ERROR` without exposing stack traces, sec
 
 ## Authentication, sessions, and CSRF
 
+### `GET /api/v1/system/status/`
+
+**Purpose:** Return the currently active bilingual maintenance window for the requested locale.
+
+**Permission:** Public. No session or CSRF cookie is required.
+
+**Success:** `{ "maintenance": null, "checked_at": "..." }` or a `maintenance` object containing only localized `title`, localized `message`, `starts_at`, and `ends_at`.
+
 The MVP uses Django's server-side session authentication. It does **not** put access tokens or passwords in `localStorage` or `sessionStorage`.
 
 - Login creates a Django session and sets an `HttpOnly`, `SameSite=Lax` session cookie.

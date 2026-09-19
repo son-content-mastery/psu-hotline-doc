@@ -133,6 +133,13 @@ For externally issued items, show database-managed issuing agency, applicable re
 - Creation and resolution create audit events; only one open request is allowed per application.
 - Return no individual application, applicant, property, officer, or free-text details in timing analytics. These metrics identify process bottlenecks and do not rank people.
 
+### S7 — Backup and Maintenance Notice (implemented optional capability)
+
+- The Docker backup worker creates PostgreSQL custom-format archives, verifies them with `pg_restore --list`, writes a SHA-256 manifest, uses private file permissions, and applies count-based retention.
+- Backup credentials are passed through the subprocess environment and never printed or stored in a command argument.
+- Super Admin can schedule bilingual maintenance notices; an anonymous status endpoint drives the global banner and public details page.
+- Restore remains a deliberate operator action into a prepared database; the application never overwrites the live database automatically.
+
 ### S6 — Pseudonymous Workload (implemented optional capability)
 
 - Count document reviews and terminal application decisions per contributing local officer for the current calendar month.

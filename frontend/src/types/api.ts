@@ -22,6 +22,16 @@ export interface AuthMeResponse {
   user: User | null
 }
 
+export interface SystemStatus {
+  maintenance: {
+    title: string
+    message: string
+    starts_at: string
+    ends_at: string
+  } | null
+  checked_at: string
+}
+
 export interface Paginated<T> {
   count: number
   next: string | null

@@ -700,6 +700,34 @@ class CentralAssistanceRequest(models.Model):
         indexes = [models.Index(fields=["status", "-requested_at"], name="central_help_status_idx")]
 
 
+class MaintenanceNotice(models.Model):
+    title_th = models.CharField(max_length=200)
+    title_en = models.CharField(max_length=200)
+    message_th = models.TextField()
+    message_en = models.TextField()
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-starts_at", "-id"]
+        indexes = [models.Index(fields=["is_active", "starts_at", "ends_at"], name="maintenance_active_idx")]
+
+    def clean(self):
+        super().clean()
+        if self.ends_at <= self.starts_at:
+            raise ValidationError({"ends_at": "Maintenance end must be after its start."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title_en
+
+
 class License(models.Model):
     class ArtifactKind(models.TextChoices):
         HOTEL_LICENSE = "HOTEL_LICENSE", "Hotel license"

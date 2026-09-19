@@ -3,6 +3,7 @@ import re
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -36,6 +37,7 @@ from apps.core.models import (
     FeeSchedule,
     License,
     LocalAuthority,
+    MaintenanceNotice,
     Property,
     PropertyType,
     PropertyTypeDocumentRequirement,
@@ -66,6 +68,7 @@ from apps.core.notifications import (
     queue_license_renewal_reminders,
 )
 from apps.core.views import anonymous_officer_reference
+from apps.core.backups import create_database_backup, verify_backup
 
 
 def make_pdf(name="document.pdf", content_type="application/pdf", encrypted=False):
@@ -1131,6 +1134,47 @@ def test_central_assistance_uses_controlled_pii_free_snapshots_and_rbac(seeded, 
     api_client.force_authenticate(seeded["officer"])
     detail = api_client.get(f"/api/v1/officer/applications/{application.id}/")
     assert detail.data["central_assistance"][0]["resolution_code"] == "REQUEST_MORE_EVIDENCE"
+
+
+def test_public_system_status_returns_only_active_localized_maintenance(db, api_client):
+    now = timezone.now()
+    MaintenanceNotice.objects.create(
+        title_th="ปิดปรับปรุงตามกำหนด",
+        title_en="Scheduled maintenance",
+        message_th="ระบบอาจใช้งานไม่ได้ชั่วคราว",
+        message_en="The service may be temporarily unavailable.",
+        starts_at=now - timedelta(minutes=5),
+        ends_at=now + timedelta(hours=1),
+    )
+    response = api_client.get("/api/v1/system/status/", HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 200
+    assert response.data["maintenance"]["title"] == "Scheduled maintenance"
+    assert response.data["maintenance"]["message"] == "The service may be temporarily unavailable."
+    assert set(response.data["maintenance"]) == {"title", "message", "starts_at", "ends_at"}
+
+
+def test_database_backup_is_private_verified_and_has_no_credential_arguments(settings, tmp_path, monkeypatch):
+    settings.BACKUP_DIR = tmp_path / "backups"
+    settings.BACKUP_RETENTION_COUNT = 2
+    commands = []
+
+    def fake_run(command, **kwargs):
+        commands.append((command, kwargs))
+        if command[0] == "pg_dump":
+            output = command[command.index("--file") + 1]
+            Path(output).write_bytes(b"valid custom archive")
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr("apps.core.backups.subprocess.run", fake_run)
+    path = create_database_backup()
+    assert path.exists()
+    assert oct(path.stat().st_mode & 0o777) == "0o600"
+    assert path.with_suffix(".json").exists()
+    assert verify_backup(path) == path
+    dump_command, dump_kwargs = commands[0]
+    assert settings.DATABASES["default"]["PASSWORD"] not in dump_command
+    assert dump_kwargs["env"]["PGPASSWORD"] == settings.DATABASES["default"]["PASSWORD"]
+    assert any(command[0] == "pg_restore" for command, _ in commands)
 
 
 def test_database_driven_checklist_and_external_guidance(seeded, api_client):

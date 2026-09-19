@@ -23,6 +23,7 @@ from .models import (
     IssuingAgencyTranslation,
     License,
     LocalAuthority,
+    MaintenanceNotice,
     Property,
     PropertyType,
     PropertyTypeDocumentRequirement,
@@ -158,6 +159,13 @@ class CentralAssistanceRequestAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(MaintenanceNotice)
+class MaintenanceNoticeAdmin(admin.ModelAdmin):
+    list_display = ("title_th", "starts_at", "ends_at", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("title_th", "title_en", "message_th", "message_en")
 
 
 @admin.register(PropertyTypeDocumentRequirement)

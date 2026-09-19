@@ -64,6 +64,9 @@ services:
       EXPECTED_LOCAL_AUTHORITY_COUNT: ${EXPECTED_LOCAL_AUTHORITY_COUNT:-19}
       CENTRAL_OVERDUE_THRESHOLD_DAYS: ${CENTRAL_OVERDUE_THRESHOLD_DAYS:-7}
       ANONYMOUS_WORKLOAD_MIN_GROUP_SIZE: ${ANONYMOUS_WORKLOAD_MIN_GROUP_SIZE:-3}
+      BACKUP_DIR: ${BACKUP_DIR:-/app/backups}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_COUNT: ${BACKUP_RETENTION_COUNT:-7}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-HoTLinE Doc <noreply@example.test>}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -105,6 +108,27 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  backup-worker:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      RUN_DEMO_SEED: "false"
+      RUN_MIGRATIONS: "false"
+      BACKUP_DIR: /app/backups
+    command: ["python", "manage.py", "run_backup_worker"]
+    volumes:
+      - ./backend:/app
+      - backup_data:/app/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   frontend:
     build:
       context: .
@@ -136,3 +160,4 @@ volumes:
   postgres_data:
   media_data:
   frontend_node_modules:
+  backup_data:

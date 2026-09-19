@@ -21,6 +21,7 @@ This repository contains a two-day Hackathon MVP intended for local demonstratio
 - Officer-only searchable library of de-identified completed cases plus bilingual database-managed review FAQs; similar cases remain advisory.
 - Read-only central overview with all 19 configured Phuket authorities, accessible area detail, average stage waits, and aggregate unusually-old-work signals.
 - Structured local-to-central guidance requests that expose no applicant, property, address, file, application, officer, or authority identity.
+- Scheduled, verified PostgreSQL backups with retention plus bilingual maintenance notices managed in Django Admin.
 - Monthly rotating pseudonymous officer workload counts with minimum-group suppression; no officer identity or authority is returned.
 - Transactional activation, workflow, and configurable licence-expiry reminder email through a PostgreSQL outbox with bounded retry. Gmail SMTP is supported as delivery transport, not Google OAuth.
 - Thai and English UI, backend-enforced RBAC, immutable audit records, and automated backend/frontend coverage.
@@ -142,6 +143,13 @@ docker compose exec -T frontend npm run build
 ```
 
 These backend tests use Django's in-memory email backend and do not deliver real email.
+
+Create or verify a backup manually (the `backup-worker` also runs on the configured interval):
+
+```bash
+docker compose exec -T backend python manage.py create_database_backup
+docker compose exec -T backend python manage.py verify_database_backup /app/backups/<file>.dump
+```
 
 The serial Playwright acceptance suite runs against a disposable seeded environment. It requires the frontend browser-test dependencies and local Google Chrome:
 

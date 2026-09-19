@@ -1,15 +1,27 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { setLocale, type AppLocale } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
+import { api } from '@/services/api'
+import type { SystemStatus } from '@/types/api'
+import { formatDate } from '@/utils/format'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const { locale, t } = useI18n()
+const maintenance = ref<SystemStatus['maintenance']>(null)
+
+async function loadSystemStatus(): Promise<void> {
+  try {
+    maintenance.value = (await api.get<SystemStatus>('/api/v1/system/status/')).maintenance
+  } catch {
+    maintenance.value = null
+  }
+}
 
 const roleLabel = computed(() => {
   const keys = {
@@ -46,7 +58,10 @@ function updateTitle(): void {
   document.title = titleKey ? `${t(titleKey)} · ${t('common.serviceName')}` : t('common.serviceName')
 }
 
-watch(locale, updateTitle, { immediate: true })
+watch(locale, () => {
+  updateTitle()
+  void loadSystemStatus()
+}, { immediate: true })
 </script>
 
 <template>
@@ -95,6 +110,17 @@ watch(locale, updateTitle, { immediate: true })
       </div>
     </div>
   </header>
+
+  <aside v-if="maintenance" class="border-b border-amber-300 bg-amber-50" role="status" aria-live="polite">
+    <div class="mx-auto max-w-6xl px-4 py-4 sm:px-6">
+      <p class="font-black text-amber-950">{{ maintenance.title }}</p>
+      <p class="mt-1 text-amber-950">{{ maintenance.message }}</p>
+      <p class="mt-1 text-sm font-semibold text-amber-900">
+        {{ t('maintenance.until', { date: formatDate(maintenance.ends_at, locale) }) }}
+        · <RouterLink :to="{ name: 'system-status' }">{{ t('maintenance.details') }}</RouterLink>
+      </p>
+    </div>
+  </aside>
 
   <main id="main-content" tabindex="-1" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
     <slot />
