@@ -29,6 +29,23 @@ export interface Paginated<T> {
   results: T[]
 }
 
+export interface ThaiSubdistrict {
+  code: string
+  name: string
+  postal_code: string
+}
+
+export interface ThaiDistrict {
+  code: string
+  name: string
+  subdistricts: ThaiSubdistrict[]
+}
+
+export interface ThaiLocationCatalog {
+  province: { code: string; name: string }
+  districts: ThaiDistrict[]
+}
+
 export interface ApplicantApplicationSummary {
   needs_action: number
   in_progress: number
@@ -167,6 +184,9 @@ export interface ApplicationProperty {
   id?: number
   name: string
   address_line?: string
+  province_code?: string | null
+  district_code?: string | null
+  subdistrict_code?: string | null
   subdistrict?: string
   district?: string
   province?: string
