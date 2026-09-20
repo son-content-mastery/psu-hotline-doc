@@ -91,6 +91,8 @@ Anonymous classification answers are held in Pinia and `sessionStorage` only so 
 
 All scoping is applied to backend querysets before object lookup. Out-of-scope object requests return `404`, not a response that confirms the object exists. `SUPER_ADMIN` management is deliberately provided through Django Admin rather than a public SPA API.
 
+For document review and application decisions, the transactional service applies the same `responsible_authority` constraint again while locking the target row. Other local-officer writes resolve the target from an authority-scoped queryset before their transaction. A cross-authority review, approval, revision request, rejection, assistance request, or discussion write returns `404 NOT_FOUND` and creates no side effects.
+
 ---
 
 ## Authentication

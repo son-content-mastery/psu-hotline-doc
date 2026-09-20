@@ -370,15 +370,49 @@ def _require_applicant_scope(application, actor):
         raise DomainError("NOT_FOUND", "The application was not found.", http_status=http_status.HTTP_404_NOT_FOUND)
 
 
-def _require_officer_scope(application, actor):
-    if actor.role != User.Role.LOCAL_OFFICER or not actor.local_authority_id:
+def _active_officer_authority_id(actor):
+    authority_id = (
+        User.objects.filter(
+            pk=getattr(actor, "pk", None),
+            role=User.Role.LOCAL_OFFICER,
+            is_active=True,
+            local_authority__is_active=True,
+        )
+        .values_list("local_authority_id", flat=True)
+        .first()
+    )
+    if not authority_id:
         raise DomainError(
             "PERMISSION_DENIED",
-            "Local officer access is required.",
+            "An active local officer assignment is required.",
             http_status=http_status.HTTP_403_FORBIDDEN,
         )
-    if application.responsible_authority_id != actor.local_authority_id:
+    return authority_id
+
+
+def _require_officer_scope(application, actor, *, authority_id=None):
+    authority_id = authority_id or _active_officer_authority_id(actor)
+    if application.responsible_authority_id != authority_id:
         raise DomainError("NOT_FOUND", "The application was not found.", http_status=http_status.HTTP_404_NOT_FOUND)
+
+
+def _locked_officer_application(*, application_id, actor, authority_id=None, select_related=()):
+    """Lock an application only after constraining the lookup to the officer's authority."""
+    authority_id = authority_id or _active_officer_authority_id(actor)
+    queryset = Application.objects.select_for_update(of=("self",)).filter(
+        responsible_authority_id=authority_id
+    )
+    if select_related:
+        queryset = queryset.select_related(*select_related)
+    application = queryset.filter(pk=application_id).first()
+    if application is None:
+        raise DomainError(
+            "NOT_FOUND",
+            "The application was not found.",
+            http_status=http_status.HTTP_404_NOT_FOUND,
+        )
+    _require_officer_scope(application, actor, authority_id=authority_id)
+    return application
 
 
 def _safe_filename(name):
@@ -816,13 +850,24 @@ def submit_application(*, application_id, actor):
 
 @transaction.atomic
 def review_document(*, document_id, actor, outcome, reason=""):
+    authority_id = _active_officer_authority_id(actor)
     document = (
         ApplicationDocument.objects.select_for_update()
         .select_related("application")
-        .get(pk=document_id)
+        .filter(application__responsible_authority_id=authority_id, pk=document_id)
+        .first()
     )
-    application = Application.objects.select_for_update().get(pk=document.application_id)
-    _require_officer_scope(application, actor)
+    if document is None:
+        raise DomainError(
+            "NOT_FOUND",
+            "The document was not found.",
+            http_status=http_status.HTTP_404_NOT_FOUND,
+        )
+    application = _locked_officer_application(
+        application_id=document.application_id,
+        actor=actor,
+        authority_id=authority_id,
+    )
     if not document.is_current:
         raise DomainError("DOCUMENT_VERSION_NOT_CURRENT", "Only the current document version can be reviewed.")
     if application.status not in {
@@ -865,8 +910,7 @@ def review_document(*, document_id, actor, outcome, reason=""):
 
 @transaction.atomic
 def request_application_revision(*, application_id, actor, reason):
-    application = Application.objects.select_for_update().get(pk=application_id)
-    _require_officer_scope(application, actor)
+    application = _locked_officer_application(application_id=application_id, actor=actor)
     reason = (reason or "").strip()
     if not reason:
         raise DomainError(
@@ -910,12 +954,11 @@ def _expiry_date(issue_date, years):
 
 @transaction.atomic
 def approve_application(*, application_id, actor, note=""):
-    application = (
-        Application.objects.select_for_update(of=("self",))
-        .select_related("confirmed_property_type")
-        .get(pk=application_id)
+    application = _locked_officer_application(
+        application_id=application_id,
+        actor=actor,
+        select_related=("confirmed_property_type",),
     )
-    _require_officer_scope(application, actor)
     if application.status != Application.Status.UNDER_REVIEW:
         if License.objects.filter(application=application).exists():
             raise DomainError("LICENSE_ALREADY_EXISTS", "A license has already been issued.")
@@ -981,8 +1024,7 @@ def approve_application(*, application_id, actor, note=""):
 
 @transaction.atomic
 def reject_application(*, application_id, actor, reason):
-    application = Application.objects.select_for_update().get(pk=application_id)
-    _require_officer_scope(application, actor)
+    application = _locked_officer_application(application_id=application_id, actor=actor)
     reason = (reason or "").strip()
     if not reason:
         raise DomainError(

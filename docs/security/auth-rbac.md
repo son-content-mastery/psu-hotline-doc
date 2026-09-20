@@ -130,6 +130,8 @@ Use both:
 1. a scope-filtered queryset before lookup; and
 2. an object-level permission check before an action.
 
+Document-review and application-decision services repeat the authority predicate in their row-locking lookup; a view-layer lookup is not treated as authorization for those later writes. Other officer writes obtain their target from an authority-scoped queryset before entering the write transaction. An authority mismatch returns neutral `404 NOT_FOUND` before any review, status history, audit, notification, assistance, discussion, or licence row can be created.
+
 Serializers expose explicit field allowlists. They do not accept ownership, role, authority assignment, status, document version, `is_current`, reviewer, audit actor/timestamp, reference number, fee snapshot, or license number from a client.
 
 ## Workflow integrity
